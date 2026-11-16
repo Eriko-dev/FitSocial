@@ -484,23 +484,57 @@ public class PostService : IPostService
         }
 
         // 4. Query database with filtering and pagination
-        var (items, totalCount) = await _posts.GetPagedPostsAsync(
-            normalizedPostType,
-            query.LocationId,
-            query.AuthorId,
-            query.EffectiveKeyword,
-            query.PageNumber,
-            query.PageSize,
-            cancellationToken);
+        var asOfTime = query.AsOf ?? DateTime.UtcNow;
 
-        var dtos = items.Select(post => MapToPostDto(post, currentUserId)).ToList();
+        Task<(List<Post> Items, int TotalCount)> pagedTask;
+        if (query.AsOf.HasValue || (!string.IsNullOrWhiteSpace(query.SortBy) && !string.Equals(query.SortBy, "hot", StringComparison.OrdinalIgnoreCase)))
+        {
+            pagedTask = _posts.GetPagedPostsAsync(
+                normalizedPostType,
+                query.LocationId,
+                query.AuthorId,
+                query.EffectiveKeyword,
+                query.PageNumber,
+                query.PageSize,
+                query.SortBy ?? "hot",
+                query.AsOf,
+                cancellationToken);
+        }
+        else
+        {
+            pagedTask = _posts.GetPagedPostsAsync(
+                normalizedPostType,
+                query.LocationId,
+                query.AuthorId,
+                query.EffectiveKeyword,
+                query.PageNumber,
+                query.PageSize,
+                cancellationToken);
+        }
+
+        var (items, totalCount) = await pagedTask;
+
+        var dtos = items.Select(post => MapToPostDto(post, currentUserId, asOfTime)).ToList();
 
         var pagedResult = PagedResultDto<PostDto>.Create(dtos, totalCount, query.PageNumber, query.PageSize);
         return ApiResponseDto<PagedResultDto<PostDto>>.Ok(pagedResult, "Posts feed retrieved successfully.");
     }
 
-    private static PostDto MapToPostDto(Post post, Guid? currentUserId)
+    public static double CalculateHotScore(int reactionCount, int commentCount, DateTime? createdAt, DateTime asOfTime)
     {
+        var postTime = createdAt ?? asOfTime;
+        var hoursElapsed = Math.Max(0.0, (asOfTime - postTime).TotalHours);
+        var engagement = (reactionCount * 1.0) + (commentCount * 2.0);
+        var decay = Math.Pow(hoursElapsed + 2.0, 1.5);
+        return decay > 0 ? (engagement / decay) : 0.0;
+    }
+
+    private static PostDto MapToPostDto(Post post, Guid? currentUserId, DateTime? asOf = null)
+    {
+        var asOfTime = asOf ?? DateTime.UtcNow;
+        var engagement = (post.PostInteractions.Count * 1.0) + (post.Comments.Count * 2.0);
+        var hotScore = CalculateHotScore(post.PostInteractions.Count, post.Comments.Count, post.CreatedAt, asOfTime);
+
         return new PostDto
         {
             Id = post.Id,
@@ -516,6 +550,8 @@ public class PostService : IPostService
             UpdatedAt = post.UpdatedAt,
             LikeCount = post.PostInteractions.Count,
             CommentCount = post.Comments.Count,
+            HotScore = hotScore,
+            EngagementScore = engagement,
             IsLikedByCurrentUser = currentUserId.HasValue && post.PostInteractions.Any(pi => pi.UserId == currentUserId.Value),
             Media = post.PostMedia.Select(pm => new PostMediaDto
             {

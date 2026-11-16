@@ -1,4 +1,4 @@
-﻿using FitSocial.Domain.Entities;
+using FitSocial.Domain.Entities;
 using FitSocial.Domain.Interfaces;
 using FitSocial.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -40,6 +40,18 @@ public class PostRepository : Repository<Post>, IPostRepository
         DbContext.PostMedia.RemoveRange(mediaItems);
     }
 
+    public Task<(List<Post> Items, int TotalCount)> GetPagedPostsAsync(
+        string? postType,
+        Guid? locationId,
+        Guid? authorId,
+        string? searchTerm,
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        return GetPagedPostsAsync(postType, locationId, authorId, searchTerm, pageNumber, pageSize, "hot", null, cancellationToken);
+    }
+
     public async Task<(List<Post> Items, int TotalCount)> GetPagedPostsAsync(
         string? postType,
         Guid? locationId,
@@ -47,6 +59,8 @@ public class PostRepository : Repository<Post>, IPostRepository
         string? searchTerm,
         int pageNumber,
         int pageSize,
+        string? sortBy,
+        DateTime? asOf,
         CancellationToken cancellationToken = default)
     {
         var query = DbSet.AsNoTracking();
@@ -77,8 +91,32 @@ public class PostRepository : Repository<Post>, IPostRepository
 
         var totalCount = await query.CountAsync(cancellationToken);
 
-        var items = await query
-            .OrderByDescending(p => p.CreatedAt)
+        var asOfTime = asOf ?? DateTime.UtcNow;
+
+        IQueryable<Post> orderedQuery;
+
+        if (string.Equals(sortBy, "newest", StringComparison.OrdinalIgnoreCase))
+        {
+            orderedQuery = query
+                .OrderByDescending(p => p.CreatedAt)
+                .ThenByDescending(p => p.Id);
+        }
+        else
+        {
+            // Trending / Hot Score algorithm:
+            // EngagementScore = (ReactionCount * 1) + (CommentCount * 2)
+            // HotScore = EngagementScore / (HoursElapsed + 2)^1.5
+            // Tie-breaker 1: CreatedAt descending
+            // Tie-breaker 2: Id descending
+            orderedQuery = query
+                .OrderByDescending(p =>
+                    ((double)(p.PostInteractions.Count * 1 + p.Comments.Count * 2)) /
+                    Math.Pow(Math.Max(0.0, (asOfTime - (p.CreatedAt ?? asOfTime)).TotalHours) + 2.0, 1.5))
+                .ThenByDescending(p => p.CreatedAt)
+                .ThenByDescending(p => p.Id);
+        }
+
+        var items = await orderedQuery
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .Include(p => p.Author)

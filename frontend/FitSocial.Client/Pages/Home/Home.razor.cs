@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.JSInterop;
 using FitSocial.Client.Models.Auth;
 using FitSocial.Client.Models.Common;
 using FitSocial.Client.Models.Posts;
@@ -10,7 +11,7 @@ using FitSocial.Client.Components.Posts;
 
 namespace FitSocial.Client.Pages.Home;
 
-public partial class Home : ComponentBase
+public partial class Home : ComponentBase, IAsyncDisposable
 {
     // Page state
     private List<PostDto>? posts;
@@ -89,10 +90,21 @@ public partial class Home : ComponentBase
     private bool hasNextPage = false;
     private bool isLoadingMore = false;
 
+    // Trending Feed & Infinite Scroll Prefetch state
+    private DotNetObjectReference<Home>? dotNetHelper;
+    private DateTime? feedSessionAsOf;
+    private readonly HashSet<Guid> loadedPostIds = new();
+    private Guid? currentTriggerPostId;
+    private bool isPrefetching = false;
+    private bool prefetchError = false;
+    private string? prefetchErrorMessage;
+    private bool _needToAttachObserver = false;
+
     private GetPostsQuery currentQuery = new()
     {
         PageNumber = 1,
-        PageSize = 10
+        PageSize = 10,
+        SortBy = "hot"
     };
 
     // Lifecycle
@@ -135,6 +147,49 @@ public partial class Home : ComponentBase
             UpdateHeaderSearchExtra();
             currentPage = 1;
             await LoadPostsAsync();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                dotNetHelper = DotNetObjectReference.Create(this);
+                await JS.InvokeVoidAsync("fitSocialInfiniteScroll.init", dotNetHelper);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Home] Error initializing infinite scroll: {ex.Message}");
+            }
+        }
+
+        if (_needToAttachObserver)
+        {
+            _needToAttachObserver = false;
+            if (currentTriggerPostId.HasValue && hasNextPage)
+            {
+                try
+                {
+                    await JS.InvokeVoidAsync("fitSocialInfiniteScroll.observeTrigger", $"post-prefetch-trigger-{currentTriggerPostId.Value}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[Home] Error observing prefetch trigger: {ex.Message}");
+                }
+            }
+            else
+            {
+                try
+                {
+                    await JS.InvokeVoidAsync("fitSocialInfiniteScroll.unobserveCurrent");
+                }
+                catch
+                {
+                    // Ignored
+                }
+            }
         }
     }
 
@@ -252,6 +307,11 @@ public partial class Home : ComponentBase
         {
             isLoading = true;
             currentPage = 1;
+            feedSessionAsOf = DateTime.UtcNow;
+            loadedPostIds.Clear();
+            currentTriggerPostId = null;
+            prefetchError = false;
+            prefetchErrorMessage = null;
         }
         else
         {
@@ -260,6 +320,8 @@ public partial class Home : ComponentBase
 
         currentQuery.PageNumber = currentPage;
         currentQuery.PageSize = pageSize;
+        currentQuery.SortBy = "hot";
+        currentQuery.AsOf = feedSessionAsOf;
         currentQuery.SearchTerm = string.IsNullOrWhiteSpace(appliedSearchTerm) ? null : appliedSearchTerm.Trim();
         currentQuery.PostType = string.IsNullOrWhiteSpace(appliedPostType) ? null : appliedPostType;
         currentQuery.LocationId = appliedLocationId.HasValue && appliedLocationId != Guid.Empty ? appliedLocationId : null;
@@ -278,17 +340,23 @@ public partial class Home : ComponentBase
                 var incoming = response.Data.Items ?? new List<PostDto>();
                 if (append && posts != null)
                 {
-                    var existingIds = new HashSet<Guid>(posts.Select(p => p.Id));
-                    var unique = incoming.Where(p => !existingIds.Contains(p.Id)).ToList();
+                    var unique = incoming.Where(p => loadedPostIds.Add(p.Id)).ToList();
                     posts.AddRange(unique);
                 }
                 else
                 {
+                    loadedPostIds.Clear();
+                    foreach (var p in incoming)
+                    {
+                        loadedPostIds.Add(p.Id);
+                    }
                     posts = incoming;
                 }
 
                 totalCount = response.Data.TotalCount;
                 hasNextPage = response.Data.HasNextPage;
+                UpdateTriggerPost();
+                _needToAttachObserver = true;
             }
             else
             {
@@ -297,6 +365,7 @@ public partial class Home : ComponentBase
                     posts = new List<PostDto>();
                 }
                 hasNextPage = false;
+                currentTriggerPostId = null;
             }
         }
         catch (Exception ex)
@@ -312,6 +381,7 @@ public partial class Home : ComponentBase
                 posts = new List<PostDto>();
             }
             hasNextPage = false;
+            currentTriggerPostId = null;
         }
         finally
         {
@@ -324,11 +394,115 @@ public partial class Home : ComponentBase
         }
     }
 
+    private void UpdateTriggerPost()
+    {
+        if (!hasNextPage || posts == null || posts.Count < 7)
+        {
+            currentTriggerPostId = null;
+            return;
+        }
+
+        // The trigger is the 7th post of the latest loaded batch:
+        // For currentPage = 1 (10 posts) -> index 6 (7th post)
+        // For currentPage = 2 (20 posts) -> index 16 (17th post)
+        // For currentPage = 3 (30 posts) -> index 26 (27th post)
+        var targetIndex = (currentPage * pageSize) - 4;
+        if (targetIndex >= 0 && targetIndex < posts.Count)
+        {
+            currentTriggerPostId = posts[targetIndex].Id;
+        }
+        else if (posts.Count >= 7)
+        {
+            currentTriggerPostId = posts[posts.Count - 4].Id;
+        }
+        else
+        {
+            currentTriggerPostId = null;
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnPrefetchTriggered()
+    {
+        if (isLoading || isLoadingMore || isPrefetching || !hasNextPage)
+        {
+            return;
+        }
+
+        await LoadNextBatchAsync();
+    }
+
+    private async Task LoadNextBatchAsync()
+    {
+        if (isLoadingMore || isPrefetching || !hasNextPage)
+            return;
+
+        isPrefetching = true;
+        isLoadingMore = true;
+        prefetchError = false;
+        prefetchErrorMessage = null;
+        StateHasChanged();
+
+        var nextPage = currentPage + 1;
+        var query = new GetPostsQuery
+        {
+            PageNumber = nextPage,
+            PageSize = pageSize,
+            SortBy = "hot",
+            AsOf = feedSessionAsOf,
+            SearchTerm = string.IsNullOrWhiteSpace(appliedSearchTerm) ? null : appliedSearchTerm.Trim(),
+            PostType = string.IsNullOrWhiteSpace(appliedPostType) ? null : appliedPostType,
+            LocationId = appliedLocationId.HasValue && appliedLocationId != Guid.Empty ? appliedLocationId : null
+        };
+
+        try
+        {
+            var response = await PostService.GetPostsAsync(query);
+            if (response.Success && response.Data != null)
+            {
+                var incoming = response.Data.Items ?? new List<PostDto>();
+                if (incoming.Any() && posts != null)
+                {
+                    var unique = incoming.Where(p => loadedPostIds.Add(p.Id)).ToList();
+                    posts.AddRange(unique);
+                }
+
+                currentPage = nextPage;
+                totalCount = response.Data.TotalCount;
+                hasNextPage = response.Data.HasNextPage;
+                UpdateTriggerPost();
+            }
+            else
+            {
+                prefetchError = true;
+                prefetchErrorMessage = response.Message ?? "Failed to load more posts.";
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Home] Error prefetching posts: {ex.Message}");
+            prefetchError = true;
+            prefetchErrorMessage = "Failed to load more posts. Please check your connection.";
+        }
+        finally
+        {
+            isPrefetching = false;
+            isLoadingMore = false;
+            _needToAttachObserver = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RetryPrefetchAsync()
+    {
+        prefetchError = false;
+        prefetchErrorMessage = null;
+        await LoadNextBatchAsync();
+    }
+
     private async Task LoadMorePostsAsync()
     {
-        if (isLoadingMore || !hasNextPage) return;
-        currentPage++;
-        await LoadPostsAsync(append: true);
+        await LoadNextBatchAsync();
     }
 
     // Modal Coordination
@@ -351,8 +525,12 @@ public partial class Home : ComponentBase
 
     private void OnPostCreated(PostDto newPost)
     {
-        posts?.Insert(0, newPost);
+        posts ??= new List<PostDto>();
+        posts.Insert(0, newPost);
+        loadedPostIds.Add(newPost.Id);
         totalCount++;
+        UpdateTriggerPost();
+        _needToAttachObserver = true;
         showCreatePostModal = false;
         createPostInitialType = null;
         ShowSuccessToast("Post published successfully!");
@@ -659,6 +837,10 @@ public partial class Home : ComponentBase
     private void OnPostDeleted(Guid deletedPostId)
     {
         posts?.RemoveAll(p => p.Id == deletedPostId);
+        loadedPostIds.Remove(deletedPostId);
+        totalCount = Math.Max(0, totalCount - 1);
+        UpdateTriggerPost();
+        _needToAttachObserver = true;
         showDeleteModal = false;
         postToDelete = null;
         ShowSuccessToast("Post deleted successfully.");
@@ -788,8 +970,11 @@ public partial class Home : ComponentBase
             var removed = posts.RemoveAll(p => p.Id == deletedPostId);
             if (removed > 0)
             {
+                loadedPostIds.Remove(deletedPostId);
                 posts = new List<PostDto>(posts);
                 totalCount = Math.Max(0, totalCount - removed);
+                UpdateTriggerPost();
+                _needToAttachObserver = true;
 
                 if (editingPost?.Id == deletedPostId)
                 {
@@ -815,7 +1000,7 @@ public partial class Home : ComponentBase
     }
 
     // Dispose
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
         PostHubClient.OnPostDeleted -= HandlePostDeletedRealtime;
         Shell.Reset();
@@ -823,5 +1008,17 @@ public partial class Home : ComponentBase
         toastCts?.Dispose();
         warningToastCts?.Cancel();
         warningToastCts?.Dispose();
+
+        try
+        {
+            await JS.InvokeVoidAsync("fitSocialInfiniteScroll.dispose");
+        }
+        catch
+        {
+            // Ignored on teardown
+        }
+
+        dotNetHelper?.Dispose();
+        dotNetHelper = null;
     }
 }
