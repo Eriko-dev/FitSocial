@@ -19,13 +19,27 @@ namespace FitSocial.Application.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IReviewRepository _reviewRepository;
         private readonly IOrderRepository _orderRepository;
+        private readonly IReviewMediaRepository _reviewMediaRepository;
+        private readonly IUserRepository _userRepository;
+        private readonly INotificationRepository _notificationRepository;
+        private readonly IEmailService _emailService;
 
-        public TrainingPackageService(ITrainingPackageRepository repository, IUnitOfWork unitOfWork, IReviewRepository reviewRepository, IOrderRepository orderRepository)
+        public TrainingPackageService(ITrainingPackageRepository repository, IUnitOfWork unitOfWork, IReviewRepository reviewRepository, IOrderRepository orderRepository, IReviewMediaRepository reviewMediaRepository, IUserRepository userRepository, INotificationRepository notificationRepository, IEmailService emailService)
         {
             _repository = repository;
             _unitOfWork = unitOfWork;
             _reviewRepository = reviewRepository;
             _orderRepository = orderRepository;
+            _reviewMediaRepository = reviewMediaRepository;
+            _userRepository = userRepository;
+            _notificationRepository = notificationRepository;
+            _emailService = emailService;
+        }
+
+        // Backward-compatible overload for existing unit tests
+        public TrainingPackageService(ITrainingPackageRepository repository, IUnitOfWork unitOfWork, IReviewRepository reviewRepository, IOrderRepository orderRepository)
+            : this(repository, unitOfWork, reviewRepository, orderRepository, null!, null!, null!, null!)
+        {
         }
 
         public async Task<IEnumerable<TrainingPackageResponseDto>> GetMyPackagesAsync(Guid currentUserId)
@@ -147,108 +161,80 @@ namespace FitSocial.Application.Services
             return true;
         }
 
-        public async Task<IEnumerable<TrainingPackageResponseDto>> GetPurchasedPackagesAsync(Guid currentUserId)
+        public async Task<PagedResultDto<TrainingPackageResponseDto>> GetPurchasedPackagesAsync(Guid currentUserId, int pageNumber = 1, int pageSize = 10)
         {
-            var packages = await _repository.GetPurchasedPackagesAsync(currentUserId);
-            return packages.Select(pkg =>
+            if (pageNumber < 1) pageNumber = 1;
+            if (pageSize < 1) pageSize = 10;
+            if (pageSize > 50) pageSize = 50;
+
+            var (orderDetails, totalCount) = await _repository.GetPurchasedOrderDetailsAsync(currentUserId, pageNumber, pageSize);
+
+            var dtos = orderDetails.Select(od =>
             {
+                var pkg = od.Package!;
                 var dto = MapToDto(pkg);
-                var userReview = pkg.Reviews?.FirstOrDefault(r => r.TraineeId == currentUserId);
+
+                dto.OrderDetailsId = od.OrderDetailsId;
+                dto.OrderId = od.OrderId;
+                dto.OrderCreatedAt = od.Order?.CreatedAt;
+                dto.OrderStatus = od.Order?.OrderStatus;
+
+                var latestRefund = od.Order?.RefundRequests?
+                    .OrderByDescending(r => r.RequestedAt ?? r.CreatedAt)
+                    .FirstOrDefault();
+                if (latestRefund != null)
+                {
+                    dto.RefundStatus = latestRefund.Status;
+                }
+                else if (string.Equals(od.Order?.OrderStatus, "REFUND_PENDING", StringComparison.OrdinalIgnoreCase))
+                {
+                    dto.RefundStatus = "PENDING";
+                }
+                else if (string.Equals(od.Order?.OrderStatus, "REFUNDED", StringComparison.OrdinalIgnoreCase))
+                {
+                    dto.RefundStatus = "APPROVED";
+                }
+
+                dto.PackageType = od.PackageType ?? pkg.PackageType ?? "BOTH";
+
+                var plan = od.TrainingPlans?.OrderByDescending(p => p.CreatedAt).FirstOrDefault();
+                if (plan != null)
+                {
+                    dto.TrainingPlanId = plan.TrainingPlanId;
+                    dto.PlanStatus = plan.Status;
+                }
+
+                var mealPlan = od.MealPlans?.OrderByDescending(p => p.CreatedAt).FirstOrDefault();
+                if (mealPlan != null)
+                {
+                    dto.MealPlanId = mealPlan.MealPlanId;
+                    dto.MealPlanStatus = mealPlan.Status;
+                }
+
+                var userReview = pkg.Reviews?.FirstOrDefault(r => r.TraineeId == currentUserId && r.OrderId == od.OrderId);
                 if (userReview != null)
                 {
                     dto.HasReviewed = true;
                     dto.IsReviewEdited = userReview.IsEdited ?? false;
                     dto.UserRating = userReview.Rating;
                     dto.UserComment = userReview.Comment;
+                    dto.UserReviewImageUrls = userReview.ReviewMedia?
+                        .OrderBy(m => m.SortOrder)
+                        .Select(m => m.MediaUrl)
+                        .ToList() ?? new List<string>();
                 }
-
-                var myOrderDetail = pkg.OrderDetails?
-                    .Where(od => od.Order?.BuyerId == currentUserId)
-                    .OrderByDescending(od => od.CreatedAt)
-                    .FirstOrDefault();
-
-                if (myOrderDetail != null)
+                else
                 {
-                    dto.OrderDetailsId = myOrderDetail.OrderDetailsId;
-                    dto.OrderId = myOrderDetail.OrderId;
-                    dto.OrderCreatedAt = myOrderDetail.Order?.CreatedAt;
-                    dto.OrderStatus = myOrderDetail.Order?.OrderStatus;
-
-                    var latestRefund = myOrderDetail.Order?.RefundRequests?
-                        .OrderByDescending(r => r.RequestedAt ?? r.CreatedAt)
-                        .FirstOrDefault();
-                    if (latestRefund != null)
-                    {
-                        dto.RefundStatus = latestRefund.Status;
-                    }
-                    else if (string.Equals(myOrderDetail.Order?.OrderStatus, "REFUND_PENDING", StringComparison.OrdinalIgnoreCase))
-                    {
-                        dto.RefundStatus = "PENDING";
-                    }
-                    else if (string.Equals(myOrderDetail.Order?.OrderStatus, "REFUNDED", StringComparison.OrdinalIgnoreCase))
-                    {
-                        dto.RefundStatus = "APPROVED";
-                    }
-
-                    dto.PackageType = myOrderDetail.PackageType ?? pkg.PackageType ?? "BOTH";
-
-                    var plan = myOrderDetail.TrainingPlans?.OrderByDescending(p => p.CreatedAt).FirstOrDefault();
-                    if (plan != null)
-                    {
-                        dto.TrainingPlanId = plan.TrainingPlanId;
-                        dto.PlanStatus = plan.Status;
-                    }
-
-                    var mealPlan = myOrderDetail.MealPlans?.OrderByDescending(p => p.CreatedAt).FirstOrDefault();
-                    if (mealPlan != null)
-                    {
-                        dto.MealPlanId = mealPlan.MealPlanId;
-                        dto.MealPlanStatus = mealPlan.Status;
-                    }
+                    dto.HasReviewed = false;
+                    dto.IsReviewEdited = false;
+                    dto.UserReviewImageUrls = new List<string>();
                 }
 
                 return dto;
-            });
+            }).ToList();
+            return PagedResultDto<TrainingPackageResponseDto>.Create(dtos, totalCount, pageNumber, pageSize);
         }
 
-        private static TrainingPackageResponseDto MapToDto(TrainingPackage entity)
-        {
-            var coachCerts = entity.Coach?.CoachCertificates;
-            bool coachHasExpired = CoachCertificatePolicy.HasExpiredCertificates(coachCerts);
-            bool coachHasValid = CoachCertificatePolicy.HasValidCertificates(coachCerts);
-
-            return new TrainingPackageResponseDto
-            {
-                PackageId = entity.PackageId,
-                CoachId = entity.CoachId,
-                CoachName = entity.Coach?.Coach?.FullName ?? "Unknown Coach",
-                CoachHasExpiredCertificates = coachHasExpired,
-                CoachHasValidCertificates = coachHasValid,
-                Title = entity.Title,
-                Description = entity.Description,
-                Price = entity.Price,
-                DurationDays = entity.DurationDays,
-                SessionCount = entity.SessionCount,
-                MinAge = entity.MinAge,
-                TargetAudience = entity.TargetAudience,
-                PackageType = entity.PackageType ?? "BOTH",
-                IsActive = entity.IsActive,
-                CreatedAt = entity.CreatedAt,
-                Media = entity.Media?.OrderBy(m => m.SortOrder).Select(m => new TrainingPackageMediaDto
-                {
-                    MediaId = m.MediaId,
-                    PackageId = m.PackageId,
-                    MediaUrl = m.MediaUrl,
-                    MediaType = m.MediaType,
-                    SortOrder = m.SortOrder,
-                    CreatedAt = m.CreatedAt
-                }).ToList() ?? new List<TrainingPackageMediaDto>()
-            };
-        }
-
-        // ==============================================================
-        // LOGIC REVIEWS & COACH REPLY THEO PACKAGE ID
-        // ==============================================================
         public async Task<ApiResponseDto<PackageReviewSummaryDto>> GetPackageReviewsAsync(Guid packageId, CancellationToken cancellationToken = default)
         {
             var reviews = await _reviewRepository.GetReviewsByPackageIdAsync(packageId, cancellationToken);
@@ -270,6 +256,7 @@ namespace FitSocial.Application.Services
                     ReviewId = r.ReviewId,
                     PackageId = packageId,
                     TraineeId = r.TraineeId,
+                    OrderId = r.OrderId,
                     TraineeName = r.Trainee?.FullName ?? "FitConnect Member",
                     TraineeAvatarUrl = r.Trainee?.AvatarUrl,
                     Rating = r.Rating ?? 0,
@@ -280,6 +267,13 @@ namespace FitSocial.Application.Services
                     CreatedAt = r.CreatedAt.HasValue ? DateTime.SpecifyKind(r.CreatedAt.Value, DateTimeKind.Utc) : null,
                     UpdatedAt = r.UpdatedAt.HasValue ? DateTime.SpecifyKind(r.UpdatedAt.Value, DateTimeKind.Utc) : null,
                     IsEdited = r.IsEdited ?? false,
+                    Media = r.ReviewMedia?.Select(m => new ReviewMediaDto
+                    {
+                        ReviewMediaId = m.ReviewMediaId,
+                        MediaUrl = m.MediaUrl,
+                        MediaType = m.MediaType,
+                        SortOrder = m.SortOrder
+                    }).ToList() ?? new List<ReviewMediaDto>()
 
                 }).ToList();
             }
@@ -301,6 +295,15 @@ namespace FitSocial.Application.Services
          
             // Validate OrderId
             if (dto.OrderId == Guid.Empty)
+            {
+                // Fallback: nếu đang sửa review cũ (chưa có OrderId), lấy OrderId từ review hiện có
+                var existingByPackage = await _reviewRepository.GetReviewByPackageAndTraineeAsync(packageId, traineeId, cancellationToken);
+                if (existingByPackage?.OrderId != null)
+                {
+                    dto.OrderId = existingByPackage.OrderId.Value;
+                }
+            }
+            if (dto.OrderId == Guid.Empty)
                 throw new ValidationException("OrderId is required to submit a review.");
 
             // Validate order: must belong to trainee, paid, and contain this package
@@ -312,11 +315,16 @@ namespace FitSocial.Application.Services
                 throw new ValidationException("You can only review a package from a paid order.");
             if (!order.OrderDetails.Any(od => od.PackageId == packageId))
                 throw new ValidationException("This order does not contain the specified package.");
-          
+           
+            // Validate images count (max 5 images)
+            if (dto.ImageUrls != null && dto.ImageUrls.Count > 5)
+                throw new ValidationException("Maximum 5 images allowed per review.");
+
             var existingReview = await _reviewRepository.GetReviewByOrderIdAndTraineeAsync(dto.OrderId, traineeId, cancellationToken);
+            var isNewReview = existingReview == null;
+
             if (existingReview != null)
             {
-                // Cho phép sửa không giới hạn (không còn edit-once)
                 if (existingReview.IsEdited == true)
                 {
                     throw new ValidationException("This review has been edited once and cannot be edited further.");
@@ -351,8 +359,6 @@ namespace FitSocial.Application.Services
             }
             catch (Microsoft.EntityFrameworkCore.DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
             {
-                // Race condition: another request inserted a review concurrently.
-                // Fetch the existing review and apply edit logic if allowed.
                 var concurrentReview = await _reviewRepository.GetReviewByOrderIdAndTraineeAsync(dto.OrderId, traineeId, cancellationToken);
                 if (concurrentReview == null)
                     throw;
@@ -365,9 +371,132 @@ namespace FitSocial.Application.Services
                 _reviewRepository.Update(concurrentReview);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
             }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
+            {
+                var concurrentReview = await _reviewRepository.GetReviewByOrderIdAndTraineeAsync(dto.OrderId, traineeId, cancellationToken);
+                if (concurrentReview == null)
+                    throw;
+                if (concurrentReview.IsEdited == true)
+                    throw new ValidationException("This review has been edited once and cannot be edited further.");
+                throw new ValidationException("Review was modified by another request. Please reload and try again.");
+            }
+
+            // Send notification + email to coach
+            try
+            {
+                var coachUser = await _userRepository.GetByIdAsync(package.CoachId, cancellationToken);
+                var traineeUser = await _userRepository.GetByIdAsync(traineeId, cancellationToken);
+                if (coachUser != null)
+                {
+                    var traineeName = traineeUser?.FullName ?? "A customer";
+                    var packageTitle = package.Title ?? "this package";
+                    var actionText = isNewReview ? "left a new" : "updated their";
+
+                    // Create in-app notification for coach
+                    var notification = new Notification
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = package.CoachId,
+                        ActorId = traineeId,
+                        ReferenceId = dto.OrderId,
+                        Type = isNewReview ? "NEW_REVIEW" : "REVIEW_UPDATED",
+                        Description = $"{traineeName} {actionText} {dto.Rating}-star review on your package \"{packageTitle}\".",
+                        IsRead = false,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    await _notificationRepository.AddAsync(notification, cancellationToken);
+                    await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+                    // Send email notification
+                    if (!string.IsNullOrWhiteSpace(coachUser.Email))
+                    {
+                        await _emailService.SendEmailAsync(
+                            coachUser.Email,
+                            "[FitConnect] " + (isNewReview ? "New review" : "Review updated") + " on your training package",
+                            "<div style=\"font-family: Arial, sans-serif;\">" +
+                            "<h2>" + (isNewReview ? "New review received" : "Review updated") + "</h2>" +
+                            "<p>Hi " + (coachUser.FullName ?? "Coach") + ",</p>" +
+                            "<p>" + traineeName + " " + actionText + " " + dto.Rating + "-star review on your package <strong>" + packageTitle + "</strong>:</p>" +
+                            "<blockquote style=\"border-left: 4px solid #FF5500; padding-left: 12px; color: #555;\">" + (dto.Comment ?? "") + "</blockquote>" +
+                            "<p>Log in to FitConnect to view and reply.</p>" +
+                            "</div>");
+                    }
+                }
+            }
+            catch
+            {
+                // Don't fail the whole review if notification/email fails
+            }
+
+            // Save ReviewMedia from uploaded image URLs (frontend uploads images first)
+            if (dto.ImageUrls != null)
+            {
+                // Get the review that was just created/updated
+                var review = await _reviewRepository.GetReviewByOrderIdAndTraineeAsync(dto.OrderId, traineeId, cancellationToken);
+                if (review != null)
+                {
+                    // Delete existing media for this review (if editing)
+                    var existingMedia = await _reviewMediaRepository.GetMediaByReviewIdAsync(review.ReviewId, cancellationToken);
+                    foreach (var media in existingMedia)
+                    {
+                        _reviewMediaRepository.Remove(media);
+                    }
+
+                    // Save image URLs as ReviewMedia
+                    for (int i = 0; i < dto.ImageUrls.Count; i++)
+                    {
+                        await _reviewMediaRepository.AddAsync(new ReviewMedia
+                        {
+                            ReviewMediaId = Guid.NewGuid(),
+                            ReviewId = review.ReviewId,
+                            MediaUrl = dto.ImageUrls[i],
+                            MediaType = "image",
+                            SortOrder = i,
+                            CreatedAt = DateTime.UtcNow
+                        });
+                    }
+
+                    await _unitOfWork.SaveChangesAsync(cancellationToken);
+                }
+            }
 
             return ApiResponseDto<bool>.Ok(true, "Review submitted successfully.");
         }
+    private static TrainingPackageResponseDto MapToDto(TrainingPackage entity)
+    {
+        var coachCerts = entity.Coach?.CoachCertificates;
+        bool coachHasExpired = CoachCertificatePolicy.HasExpiredCertificates(coachCerts);
+        bool coachHasValid = CoachCertificatePolicy.HasValidCertificates(coachCerts);
+
+        return new TrainingPackageResponseDto
+        {
+            PackageId = entity.PackageId,
+            CoachId = entity.CoachId,
+            CoachName = entity.Coach?.Coach?.FullName ?? "Unknown Coach",
+            CoachHasExpiredCertificates = coachHasExpired,
+            CoachHasValidCertificates = coachHasValid,
+            Title = entity.Title,
+            Description = entity.Description,
+            Price = entity.Price,
+            DurationDays = entity.DurationDays,
+            SessionCount = entity.SessionCount,
+            MinAge = entity.MinAge,
+            TargetAudience = entity.TargetAudience,
+            PackageType = entity.PackageType ?? "BOTH",
+            IsActive = entity.IsActive,
+            CreatedAt = entity.CreatedAt,
+            Media = entity.Media?.OrderBy(m => m.SortOrder).Select(m => new TrainingPackageMediaDto
+            {
+                MediaId = m.MediaId,
+                PackageId = m.PackageId,
+                MediaUrl = m.MediaUrl,
+                MediaType = m.MediaType,
+                SortOrder = m.SortOrder,
+                CreatedAt = m.CreatedAt
+            }).ToList() ?? new List<TrainingPackageMediaDto>()
+        };
+    }
+
         private static bool IsUniqueConstraintViolation(Microsoft.EntityFrameworkCore.DbUpdateException ex)
         {
             // PostgreSQL unique violation SQLSTATE 23505
@@ -386,15 +515,83 @@ namespace FitSocial.Application.Services
             {
                 throw new UnauthorizedAccessException("Only the coach who owns this package can reply to its reviews.");
             }
+
+            // Validate reply content not empty
+            if (string.IsNullOrWhiteSpace(dto.Reply))
+            {
+                throw new ValidationException("Reply content cannot be empty.");
+            }
+
             var review = await _reviewRepository.GetByIdAsync(reviewId, cancellationToken);
             if (review == null || review.PackageId != packageId)
             {
                 throw new NotFoundException("Review not found for this package.");
             }
-            review.Reply = dto.Reply?.Trim();
+
+            // Chỉ cho phép reply 1 lần
+            if (!string.IsNullOrWhiteSpace(review.Reply))
+            {
+                throw new ValidationException("This review already has a reply. You cannot reply again.");
+            }
+
+            review.Reply = dto.Reply.Trim();
             review.UpdatedAt = DateTime.UtcNow;
             _reviewRepository.Update(review);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            try
+            {
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
+            {
+                throw new ValidationException("Review was modified by another request. Please reload and try again.");
+            }
+
+            // Send notification + email to trainee
+            try
+            {
+                var trainee = await _userRepository.GetByIdAsync(review.TraineeId, cancellationToken);
+                if (trainee != null)
+                {
+                    // Create in-app notification
+                    var notification = new Notification
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = review.TraineeId,
+                        ActorId = coachId,
+                        ReferenceId = review.ReviewId,
+                        Type = "REVIEW_REPLY",
+                        Description = $"Coach {coachId} replied to your review on package \"{package.Title}\".",
+                        IsRead = false,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    await _notificationRepository.AddAsync(notification, cancellationToken);
+                    await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+                    // Send email notification
+                    if (!string.IsNullOrWhiteSpace(trainee.Email))
+                    {
+                        var traineeName = trainee.FullName ?? "Customer";
+                        var packageTitle = package.Title ?? "this package";
+                        var replyText = review.Reply ?? "";
+
+                        await _emailService.SendEmailAsync(
+                            trainee.Email,
+                            "[FitConnect] Coach replied to your review",
+                            "<div style=\"font-family: Arial, sans-serif;\">" +
+                            "<h2>New reply from Coach</h2>" +
+                            "<p>Hi " + traineeName + ",</p>" +
+                            "<p>A coach has replied to your review on package <strong>" + packageTitle + "</strong>:</p>" +
+                            "<blockquote style=\"border-left: 4px solid #FF5500; padding-left: 12px; color: #555;\">" + replyText + "</blockquote>" +
+                            "<p>Log in to FitConnect to view more details.</p>" +
+                            "</div>");
+                    }
+                }
+            }
+            catch
+            {
+                // Don't fail the whole reply if notification/email fails
+            }
+
             return ApiResponseDto<bool>.Ok(true, "Reply posted successfully.");
         }
       

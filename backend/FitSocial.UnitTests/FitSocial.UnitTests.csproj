@@ -22,6 +22,11 @@
 
   <ItemGroup>
     <EmbeddedResource Include="TestData\RegisterTraineeTestCases.csv" />
+    <EmbeddedResource Include="TestData\ViewCoachListTestCases.csv" />
+  </ItemGroup>
+
+  <ItemGroup>
+
   </ItemGroup>
 
   <ItemGroup>

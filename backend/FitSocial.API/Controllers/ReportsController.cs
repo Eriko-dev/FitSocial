@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using FitSocial.API.Services;
 using FitSocial.Application.DTOs.Common;
 using FitSocial.Application.DTOs.Reports;
 using FitSocial.Application.Interfaces;
@@ -18,10 +20,12 @@ namespace FitSocial.API.Controllers;
 public class ReportsController : ControllerBase
 {
     private readonly IReportService _reportService;
+    private readonly CloudinaryImageService? _imageService;
 
-    public ReportsController(IReportService reportService)
+    public ReportsController(IReportService reportService, CloudinaryImageService? imageService = null)
     {
         _reportService = reportService;
+        _imageService = imageService;
     }
 
     /// <summary>
@@ -35,7 +39,11 @@ public class ReportsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponseDto<object>), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetReports([FromQuery] GetReportsQueryDto query, CancellationToken cancellationToken = default)
     {
-        var result = await _reportService.GetReportsAsync(query, cancellationToken);
+        var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? User.FindFirst("sub")?.Value;
+        Guid? currentUserId = Guid.TryParse(userIdStr, out var uId) ? uId : null;
+
+        var result = await _reportService.GetReportsAsync(query, currentUserId, cancellationToken);
         if (!result.Success)
         {
             return BadRequest(result);
@@ -161,5 +169,13 @@ public class ReportsController : ControllerBase
 
         var result = await _reportService.ReportUserAsync(currentUserId, request, cancellationToken);
         return Ok(result);
+    }
+
+    // Upload ảnh bằng chứng cho báo cáo (trước khi gửi báo cáo)
+    [HttpPost("upload-images")]
+    public async Task<IActionResult> UploadReportImages(IFormFileCollection files, CancellationToken cancellationToken = default)
+    {
+        var uploadedUrls = await _imageService.UploadImagesFromFilesAsync(files, cancellationToken);
+        return Ok(ApiResponseDto<List<string>>.Ok(uploadedUrls, "Images uploaded successfully."));
     }
 }

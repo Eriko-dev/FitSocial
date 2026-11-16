@@ -70,10 +70,37 @@ public class ReportService : IReportService
     public async Task<ApiResponseDto<PagedResultDto<ReportListItemDto>>> GetReportsAsync(
         GetReportsQueryDto query,
         CancellationToken cancellationToken = default)
+        => await GetReportsAsync(query, query?.CurrentUserId, cancellationToken);
+
+    public async Task<ApiResponseDto<PagedResultDto<ReportListItemDto>>> GetReportsAsync(
+        GetReportsQueryDto query,
+        Guid? currentUserId,
+        CancellationToken cancellationToken = default)
     {
         try
         {
             query ??= new GetReportsQueryDto();
+
+            var viewerId = currentUserId ?? query.CurrentUserId;
+            if (viewerId.HasValue)
+            {
+                var viewer = await _userRepository.GetByIdAsync(viewerId.Value, cancellationToken);
+                if (viewer == null)
+                {
+                    return ApiResponseDto<PagedResultDto<ReportListItemDto>>.Fail("User not found.");
+                }
+
+                if (viewer.IsLocked == true)
+                {
+                    return ApiResponseDto<PagedResultDto<ReportListItemDto>>.Fail("Account is locked.");
+                }
+
+                if (!string.Equals(viewer.RoleCode, RoleConstants.Staff, StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(viewer.RoleCode, RoleConstants.Admin, StringComparison.OrdinalIgnoreCase))
+                {
+                    return ApiResponseDto<PagedResultDto<ReportListItemDto>>.Fail("Access denied. User is not authorized to view reports.");
+                }
+            }
 
             var pageNumber = query.PageNumber < 1 ? 1 : query.PageNumber;
             var pageSize = query.PageSize < 1 ? 10 : (query.PageSize > 100 ? 100 : query.PageSize);
@@ -939,6 +966,7 @@ public class ReportService : IReportService
             ReportedPostContent = r.ReportedPost?.Content,
             ReportedPostAuthorId = r.ReportedPost?.AuthorId,
             ReportedPostAuthorName = r.ReportedPost?.Author?.FullName ?? r.ReportedPost?.Author?.Email,
+            ReportedPostIsDeleted = r.ReportedPost?.IsDeleted == true,
 
             Type = r.Type,
             Reason = r.Reason,
