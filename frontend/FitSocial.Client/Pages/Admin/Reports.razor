@@ -475,7 +475,6 @@
                         <!-- Actions Section -->
                         <div class="modal-actions-box">
                             <div class="flex items-center gap-2">
-                                <AppIcon Name="shield" />
                                 <strong class="text-sm text-gray-900">Process Violation Report</strong>
                             </div>
                             <p class="text-xs text-gray-600 mt-1">
@@ -506,7 +505,7 @@
                                     else
                                     {
                                         <button type="button" class="btn-disabled-action" disabled title="@GetLockDisabledReason(selectedReport)">
-                                            Lock Account 🔒
+                                            Lock Account
                                         </button>
                                     }
 
@@ -520,7 +519,7 @@
                                     else
                                     {
                                         <button type="button" class="btn-disabled-action" disabled title="@GetBlockDisabledReason(selectedReport)">
-                                            Block User 🚫
+                                            Block User
                                         </button>
                                     }
 
@@ -529,14 +528,17 @@
                                     {
                                         @if (selectedReport.AvailableActions.Contains("DELETE_POST"))
                                         {
-                                            <button type="button" class="btn-danger-action" @onclick="OpenDeletePostModal" style="background:#b91c1c;">
+                                            <button type="button"
+                                                    @onclick="OpenDeletePostModal"
+                                                    class="btn-delete-post-action px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-red-600 hover:bg-red-700 active:bg-red-800 border border-red-700 shadow-xs transition-all cursor-pointer inline-flex items-center justify-center"
+                                                    style="background-color: #dc2626 !important; color: #ffffff !important; border: 1px solid #b91c1c !important; font-weight: 700; font-size: 0.78rem; padding: 7px 14px; border-radius: 8px; cursor: pointer; transition: all 0.15s ease-in-out;">
                                                 Delete Post
                                             </button>
                                         }
                                         else
                                         {
                                             <button type="button" class="btn-disabled-action" disabled title="Post is already deleted or not available for deletion.">
-                                                Delete Post 🗑️
+                                                Delete Post
                                             </button>
                                         }
                                     }
@@ -568,10 +570,7 @@
                         <button type="button" class="modal-close-btn" @onclick="CancelConfirm" title="Close" disabled="@isProcessingAction">✕</button>
                     </div>
                     <div class="modal-body">
-                        <div class="flex items-start gap-3">
-                            <div class="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                <AppIcon Name="warning" />
-                            </div>
+                        <div>
                             <div class="flex-1">
                                 <p class="text-sm font-medium text-gray-900">@confirmMessage</p>
                                 <p class="text-xs text-gray-500 mt-1">Please confirm if you want to proceed with this moderation action.</p>
@@ -610,10 +609,7 @@
                         <button type="button" class="modal-close-btn" @onclick="CancelDeletePost" title="Close" disabled="@isProcessingAction">✕</button>
                     </div>
                     <div class="modal-body">
-                        <div class="flex items-start gap-3">
-                            <div class="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                <AppIcon Name="warning" />
-                            </div>
+                        <div>
                             <div class="flex-1">
                                 <p class="text-sm font-semibold text-gray-900">This action will soft-delete and permanently hide the post from users.</p>
                                 <p class="text-xs text-gray-500 mt-1">
