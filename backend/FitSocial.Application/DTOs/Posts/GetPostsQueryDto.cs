@@ -29,6 +29,11 @@ public class GetPostsQueryDto
     public DateTime? AsOf { get; set; }
 
     /// <summary>
+    /// Feed session identifier for snapshot-based ranking freeze.
+    /// </summary>
+    public string? SessionId { get; set; }
+
+    /// <summary>
     /// Returns the effective trimmed keyword if provided, otherwise null.
     /// </summary>
     public string? EffectiveKeyword =>

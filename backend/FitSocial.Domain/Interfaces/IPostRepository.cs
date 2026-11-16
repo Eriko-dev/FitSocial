@@ -27,4 +27,16 @@ public interface IPostRepository : IRepository<Post>
         string? sortBy,
         DateTime? asOf,
         CancellationToken cancellationToken = default);
+
+    Task<(List<Post> Items, int TotalCount)> GetPagedPostsAsync(
+        string? postType,
+        Guid? locationId,
+        Guid? authorId,
+        string? searchTerm,
+        int pageNumber,
+        int pageSize,
+        string? sortBy,
+        DateTime? asOf,
+        string? sessionId,
+        CancellationToken cancellationToken = default);
 }

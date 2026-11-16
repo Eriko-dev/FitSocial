@@ -93,6 +93,7 @@ public partial class Home : ComponentBase, IAsyncDisposable
     // Trending Feed & Infinite Scroll Prefetch state
     private DotNetObjectReference<Home>? dotNetHelper;
     private DateTime? feedSessionAsOf;
+    private string? feedSessionId;
     private readonly HashSet<Guid> loadedPostIds = new();
     private Guid? currentTriggerPostId;
     private bool isPrefetching = false;
@@ -308,6 +309,7 @@ public partial class Home : ComponentBase, IAsyncDisposable
             isLoading = true;
             currentPage = 1;
             feedSessionAsOf = DateTime.UtcNow;
+            feedSessionId = Guid.NewGuid().ToString("N");
             loadedPostIds.Clear();
             currentTriggerPostId = null;
             prefetchError = false;
@@ -322,6 +324,7 @@ public partial class Home : ComponentBase, IAsyncDisposable
         currentQuery.PageSize = pageSize;
         currentQuery.SortBy = "hot";
         currentQuery.AsOf = feedSessionAsOf;
+        currentQuery.SessionId = feedSessionId;
         currentQuery.SearchTerm = string.IsNullOrWhiteSpace(appliedSearchTerm) ? null : appliedSearchTerm.Trim();
         currentQuery.PostType = string.IsNullOrWhiteSpace(appliedPostType) ? null : appliedPostType;
         currentQuery.LocationId = appliedLocationId.HasValue && appliedLocationId != Guid.Empty ? appliedLocationId : null;
@@ -337,6 +340,12 @@ public partial class Home : ComponentBase, IAsyncDisposable
 
             if (response.Success && response.Data != null)
             {
+                if (!string.IsNullOrWhiteSpace(response.Data.SessionId))
+                {
+                    feedSessionId = response.Data.SessionId;
+                    currentQuery.SessionId = feedSessionId;
+                }
+
                 var incoming = response.Data.Items ?? new List<PostDto>();
                 if (append && posts != null)
                 {
@@ -443,6 +452,8 @@ public partial class Home : ComponentBase, IAsyncDisposable
         prefetchErrorMessage = null;
         StateHasChanged();
 
+        var requestId = _loadPostsRequestId;
+        var sessionId = feedSessionId;
         var nextPage = currentPage + 1;
         var query = new GetPostsQuery
         {
@@ -450,6 +461,7 @@ public partial class Home : ComponentBase, IAsyncDisposable
             PageSize = pageSize,
             SortBy = "hot",
             AsOf = feedSessionAsOf,
+            SessionId = sessionId,
             SearchTerm = string.IsNullOrWhiteSpace(appliedSearchTerm) ? null : appliedSearchTerm.Trim(),
             PostType = string.IsNullOrWhiteSpace(appliedPostType) ? null : appliedPostType,
             LocationId = appliedLocationId.HasValue && appliedLocationId != Guid.Empty ? appliedLocationId : null
@@ -458,6 +470,12 @@ public partial class Home : ComponentBase, IAsyncDisposable
         try
         {
             var response = await PostService.GetPostsAsync(query);
+            if (requestId != _loadPostsRequestId || sessionId != feedSessionId)
+            {
+                // Discard stale response from superseded request/filter session
+                return;
+            }
+
             if (response.Success && response.Data != null)
             {
                 var incoming = response.Data.Items ?? new List<PostDto>();
@@ -480,16 +498,24 @@ public partial class Home : ComponentBase, IAsyncDisposable
         }
         catch (Exception ex)
         {
+            if (requestId != _loadPostsRequestId || sessionId != feedSessionId)
+            {
+                return;
+            }
+
             Console.WriteLine($"[Home] Error prefetching posts: {ex.Message}");
             prefetchError = true;
             prefetchErrorMessage = "Failed to load more posts. Please check your connection.";
         }
         finally
         {
-            isPrefetching = false;
-            isLoadingMore = false;
-            _needToAttachObserver = true;
-            StateHasChanged();
+            if (requestId == _loadPostsRequestId && sessionId == feedSessionId)
+            {
+                isPrefetching = false;
+                isLoadingMore = false;
+                _needToAttachObserver = true;
+                StateHasChanged();
+            }
         }
     }
 

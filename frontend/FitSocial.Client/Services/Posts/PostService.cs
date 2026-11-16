@@ -69,6 +69,11 @@ public class PostService : IPostService
             queryParams.Add($"asOf={Uri.EscapeDataString(query.AsOf.Value.ToString("o"))}");
         }
 
+        if (!string.IsNullOrWhiteSpace(query.SessionId))
+        {
+            queryParams.Add($"sessionId={Uri.EscapeDataString(query.SessionId.Trim())}");
+        }
+
         var url = $"posts?{string.Join("&", queryParams)}";
         var response = await _apiClient.GetAsync<PagedResult<PostDto>>(url);
 

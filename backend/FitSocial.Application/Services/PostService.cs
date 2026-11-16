@@ -487,7 +487,21 @@ public class PostService : IPostService
         var asOfTime = query.AsOf ?? DateTime.UtcNow;
 
         Task<(List<Post> Items, int TotalCount)> pagedTask;
-        if (query.AsOf.HasValue || (!string.IsNullOrWhiteSpace(query.SortBy) && !string.Equals(query.SortBy, "hot", StringComparison.OrdinalIgnoreCase)))
+        if (!string.IsNullOrWhiteSpace(query.SessionId))
+        {
+            pagedTask = _posts.GetPagedPostsAsync(
+                normalizedPostType,
+                query.LocationId,
+                query.AuthorId,
+                query.EffectiveKeyword,
+                query.PageNumber,
+                query.PageSize,
+                query.SortBy ?? "hot",
+                query.AsOf,
+                query.SessionId,
+                cancellationToken);
+        }
+        else if (query.AsOf.HasValue || (!string.IsNullOrWhiteSpace(query.SortBy) && !string.Equals(query.SortBy, "hot", StringComparison.OrdinalIgnoreCase)))
         {
             pagedTask = _posts.GetPagedPostsAsync(
                 normalizedPostType,
@@ -516,7 +530,7 @@ public class PostService : IPostService
 
         var dtos = items.Select(post => MapToPostDto(post, currentUserId, asOfTime)).ToList();
 
-        var pagedResult = PagedResultDto<PostDto>.Create(dtos, totalCount, query.PageNumber, query.PageSize);
+        var pagedResult = PagedResultDto<PostDto>.Create(dtos, totalCount, query.PageNumber, query.PageSize, query.SessionId);
         return ApiResponseDto<PagedResultDto<PostDto>>.Ok(pagedResult, "Posts feed retrieved successfully.");
     }
 

@@ -84,6 +84,7 @@ public class GetPostsQuery
     public string? SearchTerm { get; set; }
     public string? SortBy { get; set; } = "hot";
     public DateTime? AsOf { get; set; }
+    public string? SessionId { get; set; }
 }
 
 public class CommentDto

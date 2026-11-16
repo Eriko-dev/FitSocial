@@ -217,4 +217,138 @@ public class TrendingFeedTests
         _output.WriteLine("Generated SQL:\n" + sql);
         Assert.Contains("ORDER BY", sql);
     }
+
+    [Fact]
+    public async Task FeedSessionSnapshot_FreezesRankingAcrossPages_EvenWhenReactionsChange()
+    {
+        var dbName = "FitSocial_SnapshotTest_" + Guid.NewGuid();
+        var options = new DbContextOptionsBuilder<FitSocialDbContext>()
+            .UseInMemoryDatabase(dbName)
+            .Options;
+
+        using var context = new FitSocialDbContext(options);
+        var cache = new Microsoft.Extensions.Caching.Memory.MemoryCache(
+            new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions());
+        var repo = new FitSocial.Infrastructure.Repositories.PostRepository(context, cache);
+
+        var asOf = new DateTime(2026, 11, 16, 12, 0, 0, DateTimeKind.Utc);
+        var author = new User { UserId = Guid.NewGuid(), FullName = "Athlete Test", Email = "athlete.test@fitsocial.vn", PasswordHash = "hash" };
+        var location = new Location { LocationId = Guid.NewGuid(), LocationName = "Gym A" };
+        context.Users.Add(author);
+        context.Locations.Add(location);
+
+        // Post 1: 5 reactions (Rank 1 initially)
+        var p1 = new Post { Id = Guid.NewGuid(), AuthorId = author.UserId, Content = "Post 1", PostType = "Normal", CreatedAt = asOf.AddHours(-1), IsDeleted = false };
+        // Post 2: 3 reactions (Rank 2 initially)
+        var p2 = new Post { Id = Guid.NewGuid(), AuthorId = author.UserId, Content = "Post 2", PostType = "Normal", CreatedAt = asOf.AddHours(-1), IsDeleted = false };
+        // Post 3: 1 reaction (Rank 3 initially)
+        var p3 = new Post { Id = Guid.NewGuid(), AuthorId = author.UserId, Content = "Post 3", PostType = "Normal", CreatedAt = asOf.AddHours(-1), IsDeleted = false };
+        // Post 4: 0 reactions (Rank 4 initially)
+        var p4 = new Post { Id = Guid.NewGuid(), AuthorId = author.UserId, Content = "Post 4", PostType = "Normal", CreatedAt = asOf.AddHours(-1), IsDeleted = false };
+
+        context.Posts.AddRange(p1, p2, p3, p4);
+
+        for (int i = 0; i < 5; i++) p1.PostInteractions.Add(new PostInteraction { PostId = p1.Id, UserId = Guid.NewGuid() });
+        for (int i = 0; i < 3; i++) p2.PostInteractions.Add(new PostInteraction { PostId = p2.Id, UserId = Guid.NewGuid() });
+        for (int i = 0; i < 1; i++) p3.PostInteractions.Add(new PostInteraction { PostId = p3.Id, UserId = Guid.NewGuid() });
+
+        await context.SaveChangesAsync();
+
+        var sessionId = "session-snap-test-1";
+
+        // Step 1: Fetch Page 1 (pageSize = 2) for session 1
+        var (page1Items, totalCount) = await repo.GetPagedPostsAsync(
+            postType: null, locationId: null, authorId: null, searchTerm: null,
+            pageNumber: 1, pageSize: 2, sortBy: "hot", asOf: asOf, sessionId: sessionId);
+
+        Assert.Equal(4, totalCount);
+        Assert.Equal(2, page1Items.Count);
+        Assert.Equal(p1.Id, page1Items[0].Id);
+        Assert.Equal(p2.Id, page1Items[1].Id);
+
+        // Step 2: Now simulate concurrent activity while user is reading Page 1.
+        // Post 3 and Post 4 receive 20 new reactions each in database, making their scores far higher than Post 1 and Post 2!
+        for (int i = 0; i < 20; i++)
+        {
+            context.PostInteractions.Add(new PostInteraction { PostId = p3.Id, UserId = Guid.NewGuid() });
+            context.PostInteractions.Add(new PostInteraction { PostId = p4.Id, UserId = Guid.NewGuid() });
+        }
+        await context.SaveChangesAsync();
+
+        // Step 3: Fetch Page 2 (pageSize = 2) for the SAME session
+        // With snapshot ranking, Page 2 MUST return the remaining items from the frozen snapshot (Post 3, Post 4)
+        // and must NOT duplicate Post 1 or Post 2!
+        var (page2Items, totalCountPage2) = await repo.GetPagedPostsAsync(
+            postType: null, locationId: null, authorId: null, searchTerm: null,
+            pageNumber: 2, pageSize: 2, sortBy: "hot", asOf: asOf, sessionId: sessionId);
+
+        Assert.Equal(4, totalCountPage2);
+        Assert.Equal(2, page2Items.Count);
+        Assert.Equal(p3.Id, page2Items[0].Id);
+        Assert.Equal(p4.Id, page2Items[1].Id);
+
+        // Step 4: Verify that a NEW session reflects the updated ranking
+        var newSessionId = "session-snap-test-2";
+        var (newPage1Items, newTotalCount) = await repo.GetPagedPostsAsync(
+            postType: null, locationId: null, authorId: null, searchTerm: null,
+            pageNumber: 1, pageSize: 2, sortBy: "hot", asOf: asOf, sessionId: newSessionId);
+
+        Assert.Equal(4, newTotalCount);
+        Assert.Equal(2, newPage1Items.Count);
+        // In the fresh session, Post 3 and Post 4 (with 21 and 20 reactions) are now the Top 2 posts
+        Assert.Contains(newPage1Items, p => p.Id == p3.Id);
+        Assert.Contains(newPage1Items, p => p.Id == p4.Id);
+    }
+
+    [Fact]
+    public async Task PostService_GetPostsAsync_PassesSessionId_AndReturnsInPagedResult()
+    {
+        var mockRepo = new Mock<IPostRepository>();
+        var mockLocationRepo = new Mock<ILocationRepository>();
+        var mockUserRepo = new Mock<IUserRepository>();
+        var mockUnitOfWork = new Mock<IUnitOfWork>();
+
+        var asOf = new DateTime(2026, 11, 16, 12, 0, 0, DateTimeKind.Utc);
+        var samplePost = new Post
+        {
+            Id = Guid.NewGuid(),
+            Content = "Session Feed Post",
+            PostType = "Normal",
+            CreatedAt = asOf.AddHours(-1),
+            Author = new User { UserId = Guid.NewGuid(), FullName = "Trainer Alice" },
+            PostInteractions = new List<PostInteraction>(),
+            Comments = new List<Comment>()
+        };
+
+        var sessionId = "test-session-id-456";
+
+        mockRepo.Setup(r => r.GetPagedPostsAsync(
+                null, null, null, null, 1, 10, "hot", asOf, sessionId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((new List<Post> { samplePost }, 1));
+
+        var postService = new PostService(
+            mockRepo.Object,
+            mockUserRepo.Object,
+            mockLocationRepo.Object,
+            mockUnitOfWork.Object);
+
+        var query = new GetPostsQueryDto
+        {
+            PageNumber = 1,
+            PageSize = 10,
+            SortBy = "hot",
+            AsOf = asOf,
+            SessionId = sessionId
+        };
+
+        var result = await postService.GetPostsAsync(query);
+
+        Assert.True(result.Success);
+        Assert.NotNull(result.Data);
+        Assert.Equal(sessionId, result.Data.SessionId);
+        Assert.Single(result.Data.Items);
+
+        mockRepo.Verify(r => r.GetPagedPostsAsync(
+            null, null, null, null, 1, 10, "hot", asOf, sessionId, It.IsAny<CancellationToken>()), Times.Once);
+    }
 }
