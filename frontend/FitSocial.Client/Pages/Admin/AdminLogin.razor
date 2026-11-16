@@ -3,9 +3,11 @@
 @inject IAuthService AuthService
 @inject ITokenStorage TokenStorage
 @inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
 @using FitSocial.Client.Models.Auth
+@using Microsoft.AspNetCore.Components.Authorization
 
-<PageTitle>Management Portal - FitConnect</PageTitle>
+<PageTitle>Sign In - FitConnect Management Portal</PageTitle>
 
 <div class="login-hero">
     <img src="img/fitconnect-logo.png" alt="FitConnect" class="hero-logo" />
@@ -83,7 +85,20 @@
 
         if (await AuthService.IsAuthenticatedAsync())
         {
-            Navigation.NavigateTo("/admin");
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            if (user.IsInRole(AppRoles.Admin))
+            {
+                Navigation.NavigateTo("/admin");
+            }
+            else if (user.IsInRole(AppRoles.Staff))
+            {
+                Navigation.NavigateTo("/admin/users");
+            }
+            else
+            {
+                Navigation.NavigateTo("/admin/users");
+            }
         }
     }
 
@@ -115,8 +130,8 @@
                 }
                 else
                 {
-                    // Fallback
-                    Navigation.NavigateTo("/admin");
+                    // Fallback to shared user management
+                    Navigation.NavigateTo("/admin/users");
                 }
             }
             else
