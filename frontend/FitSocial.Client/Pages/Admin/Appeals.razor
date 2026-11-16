@@ -8,7 +8,7 @@
 @inject IReportService ReportService
 @inject NavigationManager Navigation
 
-<PageTitle>Appeals - FitConnect Staff Console</PageTitle>
+<PageTitle>Appeals - FitConnect Management Portal</PageTitle>
 
 <AuthorizeView Roles="ADMIN,STAFF">
     <Authorized>
@@ -275,6 +275,10 @@
                                     {
                                         <div style="margin-top:4px;">Note: @selectedAppeal.AppealReviewNote</div>
                                     }
+                                    @if (!string.IsNullOrWhiteSpace(selectedAppeal.AppealResolverName))
+                                    {
+                                        <div style="margin-top:4px;">Reviewed by: <strong>@selectedAppeal.AppealResolverName</strong></div>
+                                    }
                                     @if (selectedAppeal.AppealReviewedAt.HasValue)
                                     {
                                         <div style="margin-top:4px;color:#64748b;">Reviewed: @selectedAppeal.AppealReviewedAt.Value.ToLocalTime().ToString("f")</div>
@@ -284,11 +288,11 @@
                         }
                         else
                         {
-                            <!-- Staff Action Area -->
+                            <!-- Reviewer Action Area -->
                             <div class="modal-actions-box">
                                 <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
                                     <AppIcon Name="shield" />
-                                    <strong style="font-size:.85rem;color:#1e293b;">Staff Actions</strong>
+                                    <strong style="font-size:.85rem;color:#1e293b;">Reviewer Actions</strong>
                                 </div>
 
                                 <!-- Review Note -->

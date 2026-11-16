@@ -7,7 +7,7 @@
 @inject IRefundService RefundService
 @inject NavigationManager Navigation
 
-<PageTitle>Refund Requests - FitConnect Admin Console</PageTitle>
+<PageTitle>Refund Requests - FitConnect Management Portal</PageTitle>
 
 <AuthorizeView Roles="ADMIN,STAFF">
     <Authorized>
@@ -590,7 +590,7 @@
                         </div>
 
                         <div class="form-group mt-3">
-                            <label class="form-label">Optional Staff Note:</label>
+                            <label class="form-label">Reviewer Note (Optional):</label>
                             <textarea class="form-textarea" @bind="approvalNote" placeholder="Enter processing note or audit details..."></textarea>
                         </div>
                     </div>
@@ -735,7 +735,7 @@
                             }
                             else
                             {
-                                <AppIcon Name="warning" />
+                                <AppIcon Name="shield" />
                             }
                         </div>
                     </div>
@@ -1191,7 +1191,8 @@
 
                 await LoadRefundRequestsAsync(isSilent: true);
 
-                ToastService.ShowWarning("Refund request rejected.");
+                // Successful operation displays green toast notification
+                ToastService.ShowSuccess("Refund request rejected successfully.");
             }
             else
             {

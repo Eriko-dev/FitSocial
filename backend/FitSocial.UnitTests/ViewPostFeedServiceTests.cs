@@ -112,7 +112,7 @@ public class ViewPostFeedServiceTests
         // Assert
         Assert.NotNull(result);
         Assert.True(result.Success);
-        Assert.Equal("Posts retrieved successfully.", result.Message);
+        Assert.Equal("Posts feed retrieved successfully.", result.Message);
         Assert.NotNull(result.Data);
 
         var data = result.Data;

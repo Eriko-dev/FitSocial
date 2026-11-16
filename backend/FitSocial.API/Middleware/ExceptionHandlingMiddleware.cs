@@ -32,6 +32,7 @@ public class ExceptionHandlingMiddleware
     {
         var (statusCode, message) = ex switch
         {
+            SessionExpiredException sessionEx => (StatusCodes.Status410Gone, sessionEx.Message),
             ValidationException validationEx => (StatusCodes.Status400BadRequest, validationEx.Message),
             BusinessException businessEx => (StatusCodes.Status400BadRequest, businessEx.Message),
             ConflictException conflictEx => (StatusCodes.Status409Conflict, conflictEx.Message),

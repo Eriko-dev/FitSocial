@@ -64,6 +64,8 @@ public static class ServiceCollectionExtensions
         services.AddDbContext<FitSocialDbContext>(options =>
             options.UseNpgsql(connectionString));
 
+        services.AddMemoryCache();
+
         // Configure Redis Distributed Cache
         services.AddStackExchangeRedisCache(options =>
         {

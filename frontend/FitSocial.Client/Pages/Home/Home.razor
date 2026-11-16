@@ -1,5 +1,6 @@
 @page "/home"
 @attribute [Authorize(Roles = "TRAINEE,COACH")]
+@implements IAsyncDisposable
 
 @inject IPostService PostService
 @inject ICoachService CoachService
@@ -191,33 +192,55 @@
                     {
                         @foreach (var post in posts)
                         {
-                            <PostCard @key="post.Id" Post="post" CurrentUserId="currentUserId"
-                                      CurrentUserName="@userName" CurrentUserAvatarUrl="@currentUserAvatarUrl"
-                                      OnLike="ToggleLike" OnEdit="OpenEditPostModal" OnDelete="OpenDeletePostModal"
-                                      OnReport="HandleReportPost" OnAuthorClick="NavigateToAuthorProfile" />
+                            <div id="@(post.Id == currentTriggerPostId ? $"post-prefetch-trigger-{post.Id}" : null)" class="w-full">
+                                <PostCard @key="post.Id" Post="post" CurrentUserId="currentUserId"
+                                          CurrentUserName="@userName" CurrentUserAvatarUrl="@currentUserAvatarUrl"
+                                          OnLike="ToggleLike" OnEdit="OpenEditPostModal" OnDelete="OpenDeletePostModal"
+                                          OnReport="HandleReportPost" OnAuthorClick="NavigateToAuthorProfile" />
+                            </div>
                         }
                     }
 
-                    <!-- Load More / Pagination -->
-                    @if (hasNextPage)
+                    <!-- Prefetch Loading Indicator -->
+                    @if (isLoadingMore && !isLoading)
                     {
-                        <div class="flex justify-center pt-2 pb-4">
-                            <button type="button" @onclick="LoadMorePostsAsync" disabled="@isLoadingMore"
-                                    class="px-6 py-2.5 bg-white hover:bg-orange-50 text-gray-700 hover:text-[#FF5500] border border-gray-200 hover:border-orange-200 rounded-xl shadow-xs hover:shadow-sm font-semibold text-xs transition-all duration-150 flex items-center gap-2 cursor-pointer disabled:opacity-60">
-                                @if (isLoadingMore)
-                                {
-                                    <span
-                                    class="w-4 h-4 border-2 border-[#FF5500] border-t-transparent rounded-full animate-spin"></span>
-                                    <span>Loading more posts...</span>
-                                }
-                                else
-                                {
-                                    <svg class="w-4 h-4 text-[#FF5500]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                    </svg>
-                                    <span>Load More Posts</span>
-                                }
+                        <div class="flex items-center justify-center gap-2 py-4 text-xs text-gray-500 font-medium animate-in fade-in">
+                            <span class="w-4 h-4 border-2 border-[#FF5500] border-t-transparent rounded-full animate-spin"></span>
+                            <span>Loading trending posts...</span>
+                        </div>
+                    }
+
+                    <!-- Prefetch Error / Retry State -->
+                    @if (prefetchError)
+                    {
+                        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 my-2 bg-amber-50/70 border border-amber-200/80 rounded-2xl text-xs">
+                            <div class="flex items-center gap-2 text-amber-800">
+                                <svg class="w-4 h-4 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                </svg>
+                                <span>@(prefetchErrorMessage ?? "Failed to load more posts.")</span>
+                            </div>
+                            <button type="button" @onclick="RetryPrefetchAsync"
+                                    class="px-4 py-1.5 bg-[#FF5500] hover:bg-[#e04b00] text-white rounded-xl font-semibold shadow-xs transition-all flex items-center gap-1.5 cursor-pointer flex-shrink-0">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                <span>Retry</span>
                             </button>
+                        </div>
+                    }
+
+                    <!-- End of Feed State -->
+                    @if (!hasNextPage && posts != null && posts.Any())
+                    {
+                        <div class="flex flex-col items-center justify-center py-8 text-center text-gray-400">
+                            <div class="w-8 h-8 rounded-full bg-orange-50 text-[#FF5500] flex items-center justify-center mb-2 shadow-xs">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            <p class="text-xs font-semibold text-gray-600">You're all caught up!</p>
+                            <p class="text-[11px] text-gray-400 mt-0.5">You've seen all the trending posts for now.</p>
                         </div>
                     }
 
