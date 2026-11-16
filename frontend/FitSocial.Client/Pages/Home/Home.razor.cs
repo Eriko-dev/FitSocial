@@ -100,6 +100,8 @@ public partial class Home : ComponentBase, IAsyncDisposable
     private bool prefetchError = false;
     private string? prefetchErrorMessage;
     private bool _needToAttachObserver = false;
+    private bool _hasRecoveredFromExpiredSession = false;
+    private int _consecutiveEmptyBatches = 0;
 
     private GetPostsQuery currentQuery = new()
     {
@@ -111,6 +113,15 @@ public partial class Home : ComponentBase, IAsyncDisposable
     // Lifecycle
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity?.IsAuthenticated != true)
+        {
+            var returnUrl = Uri.EscapeDataString(Navigation.ToBaseRelativePath(Navigation.Uri));
+            Navigation.NavigateTo(string.IsNullOrEmpty(returnUrl) ? "login" : $"login?returnUrl={returnUrl}");
+            return;
+        }
+
         PostHubClient.OnPostDeleted -= HandlePostDeletedRealtime;
         PostHubClient.OnPostDeleted += HandlePostDeletedRealtime;
 
@@ -130,6 +141,14 @@ public partial class Home : ComponentBase, IAsyncDisposable
         UpdateHeaderSearchExtra();
 
         await LoadUserInfoAsync();
+
+        if (!currentUserId.HasValue || currentUserId.Value == Guid.Empty)
+        {
+            var returnUrl = Uri.EscapeDataString(Navigation.ToBaseRelativePath(Navigation.Uri));
+            Navigation.NavigateTo(string.IsNullOrEmpty(returnUrl) ? "login" : $"login?returnUrl={returnUrl}");
+            return;
+        }
+
         await Task.WhenAll(LoadPostsAsync(), LoadLocationsAsync(), PostHubClient.StartAsync());
         _hasInitialized = true;
     }
@@ -302,11 +321,22 @@ public partial class Home : ComponentBase, IAsyncDisposable
     }
     private async Task LoadPostsAsync(bool append = false)
     {
+        if (!currentUserId.HasValue || currentUserId.Value == Guid.Empty)
+        {
+            var returnUrl = Uri.EscapeDataString(Navigation.ToBaseRelativePath(Navigation.Uri));
+            Navigation.NavigateTo(string.IsNullOrEmpty(returnUrl) ? "login" : $"login?returnUrl={returnUrl}");
+            return;
+        }
+
         var requestId = Interlocked.Increment(ref _loadPostsRequestId);
 
         if (!append)
         {
             isLoading = true;
+            isLoadingMore = false;
+            isPrefetching = false;
+            _hasRecoveredFromExpiredSession = false;
+            _consecutiveEmptyBatches = 0;
             currentPage = 1;
             feedSessionAsOf = DateTime.UtcNow;
             feedSessionId = Guid.NewGuid().ToString("N");
@@ -366,9 +396,36 @@ public partial class Home : ComponentBase, IAsyncDisposable
                 hasNextPage = response.Data.HasNextPage;
                 UpdateTriggerPost();
                 _needToAttachObserver = true;
+
+                // Handle initial empty batch (Page 1):
+                // If Page 1 returned 0 posts (e.g. all 10 posts in Page 1 were deleted),
+                // but hasNextPage is true, no post DOM elements exist to trigger IntersectionObserver.
+                // We proactively fetch the next batch up to the consecutive empty batch limit (3).
+                if (!append && incoming.Count == 0 && hasNextPage)
+                {
+                    _consecutiveEmptyBatches++;
+                    if (_consecutiveEmptyBatches < 3)
+                    {
+                        isLoading = false;
+                        StateHasChanged();
+                        await LoadNextBatchAsync();
+                        return;
+                    }
+                }
             }
             else
             {
+                var isAuthError = response.Message != null &&
+                                  (response.Message.Contains("authenticated", StringComparison.OrdinalIgnoreCase) ||
+                                   response.Message.Contains("unauthorized", StringComparison.OrdinalIgnoreCase) ||
+                                   response.Message.Contains("forbidden", StringComparison.OrdinalIgnoreCase));
+                if (isAuthError)
+                {
+                    var returnUrl = Uri.EscapeDataString(Navigation.ToBaseRelativePath(Navigation.Uri));
+                    Navigation.NavigateTo(string.IsNullOrEmpty(returnUrl) ? "login" : $"login?returnUrl={returnUrl}");
+                    return;
+                }
+
                 if (!append)
                 {
                     posts = new List<PostDto>();
@@ -397,7 +454,10 @@ public partial class Home : ComponentBase, IAsyncDisposable
             if (requestId == _loadPostsRequestId)
             {
                 isLoading = false;
-                isLoadingMore = false;
+                if (!isPrefetching)
+                {
+                    isLoadingMore = false;
+                }
                 StateHasChanged();
             }
         }
@@ -405,7 +465,7 @@ public partial class Home : ComponentBase, IAsyncDisposable
 
     private void UpdateTriggerPost()
     {
-        if (!hasNextPage || posts == null || posts.Count < 7)
+        if (!hasNextPage || posts == null || posts.Count == 0)
         {
             currentTriggerPostId = null;
             return;
@@ -426,7 +486,10 @@ public partial class Home : ComponentBase, IAsyncDisposable
         }
         else
         {
-            currentTriggerPostId = null;
+            // Short batch case: fewer than 7 total posts due to deleted items, but hasNextPage is still true.
+            // Trigger on the second-to-last or last item so prefetching is not halted.
+            var shortBatchTriggerIndex = Math.Max(0, posts.Count - 2);
+            currentTriggerPostId = posts[shortBatchTriggerIndex].Id;
         }
     }
 
@@ -443,7 +506,7 @@ public partial class Home : ComponentBase, IAsyncDisposable
 
     private async Task LoadNextBatchAsync()
     {
-        if (isLoadingMore || isPrefetching || !hasNextPage)
+        if (!currentUserId.HasValue || currentUserId.Value == Guid.Empty || isLoadingMore || isPrefetching || !hasNextPage)
             return;
 
         isPrefetching = true;
@@ -481,19 +544,59 @@ public partial class Home : ComponentBase, IAsyncDisposable
                 var incoming = response.Data.Items ?? new List<PostDto>();
                 if (incoming.Any() && posts != null)
                 {
+                    _consecutiveEmptyBatches = 0;
                     var unique = incoming.Where(p => loadedPostIds.Add(p.Id)).ToList();
                     posts.AddRange(unique);
+                }
+                else
+                {
+                    _consecutiveEmptyBatches++;
                 }
 
                 currentPage = nextPage;
                 totalCount = response.Data.TotalCount;
                 hasNextPage = response.Data.HasNextPage;
                 UpdateTriggerPost();
+
+                // If batch was empty (all posts in page slice deleted) but more pages remain in snapshot,
+                // auto-advance up to 3 times to prevent feed stall without infinite looping.
+                if (incoming.Count == 0 && hasNextPage && _consecutiveEmptyBatches < 3)
+                {
+                    isPrefetching = false;
+                    isLoadingMore = false;
+                    await LoadNextBatchAsync();
+                    return;
+                }
             }
             else
             {
+                var isAuthError = response.Message != null &&
+                                  (response.Message.Contains("authenticated", StringComparison.OrdinalIgnoreCase) ||
+                                   response.Message.Contains("unauthorized", StringComparison.OrdinalIgnoreCase) ||
+                                   response.Message.Contains("forbidden", StringComparison.OrdinalIgnoreCase));
+                if (isAuthError)
+                {
+                    var returnUrl = Uri.EscapeDataString(Navigation.ToBaseRelativePath(Navigation.Uri));
+                    Navigation.NavigateTo(string.IsNullOrEmpty(returnUrl) ? "login" : $"login?returnUrl={returnUrl}");
+                    return;
+                }
+
+                var isExpired = response.Message != null &&
+                                (response.Message.Contains("expired", StringComparison.OrdinalIgnoreCase) ||
+                                 (response.Message.Contains("session", StringComparison.OrdinalIgnoreCase) && response.Message.Contains("invalid", StringComparison.OrdinalIgnoreCase)));
+
+                if (isExpired && !_hasRecoveredFromExpiredSession)
+                {
+                    _hasRecoveredFromExpiredSession = true;
+                    // Automatically restart a fresh feed session from Page 1 to recover cleanly
+                    await LoadPostsAsync(append: false);
+                    return;
+                }
+
                 prefetchError = true;
-                prefetchErrorMessage = response.Message ?? "Failed to load more posts.";
+                prefetchErrorMessage = isExpired
+                    ? "Your feed session has expired. Click Retry to refresh your feed."
+                    : (response.Message ?? "Failed to load more posts.");
             }
         }
         catch (Exception ex)
@@ -521,9 +624,18 @@ public partial class Home : ComponentBase, IAsyncDisposable
 
     private async Task RetryPrefetchAsync()
     {
-        prefetchError = false;
-        prefetchErrorMessage = null;
-        await LoadNextBatchAsync();
+        if (prefetchErrorMessage != null && prefetchErrorMessage.Contains("expired", StringComparison.OrdinalIgnoreCase))
+        {
+            prefetchError = false;
+            prefetchErrorMessage = null;
+            await LoadPostsAsync(append: false);
+        }
+        else
+        {
+            prefetchError = false;
+            prefetchErrorMessage = null;
+            await LoadNextBatchAsync();
+        }
     }
 
     private async Task LoadMorePostsAsync()
@@ -549,17 +661,15 @@ public partial class Home : ComponentBase, IAsyncDisposable
         createPostInitialType = null;
     }
 
-    private void OnPostCreated(PostDto newPost)
+    private async Task OnPostCreated(PostDto newPost)
     {
-        posts ??= new List<PostDto>();
-        posts.Insert(0, newPost);
-        loadedPostIds.Add(newPost.Id);
-        totalCount++;
-        UpdateTriggerPost();
-        _needToAttachObserver = true;
         showCreatePostModal = false;
         createPostInitialType = null;
         ShowSuccessToast("Post published successfully!");
+
+        // Refresh Feed Session so the newly created post is queried from DB,
+        // ranked according to HotScore, and snapshot pagination remains completely consistent.
+        await LoadPostsAsync(append: false);
     }
 
     // Search Handlers

@@ -38,5 +38,6 @@ public interface IPostRepository : IRepository<Post>
         string? sortBy,
         DateTime? asOf,
         string? sessionId,
+        Guid? currentUserId = null,
         CancellationToken cancellationToken = default);
 }

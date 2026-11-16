@@ -499,6 +499,7 @@ public class PostService : IPostService
                 query.SortBy ?? "hot",
                 query.AsOf,
                 query.SessionId,
+                currentUserId,
                 cancellationToken);
         }
         else if (query.AsOf.HasValue || (!string.IsNullOrWhiteSpace(query.SortBy) && !string.Equals(query.SortBy, "hot", StringComparison.OrdinalIgnoreCase)))

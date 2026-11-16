@@ -1,5 +1,7 @@
+using FitSocial.Application.Exceptions;
 using FitSocial.Domain.Entities;
 using FitSocial.Domain.Interfaces;
+using FitSocial.Domain.Models;
 using FitSocial.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
@@ -8,11 +10,11 @@ namespace FitSocial.Infrastructure.Repositories;
 
 public class PostRepository : Repository<Post>, IPostRepository
 {
-    private readonly IMemoryCache? _memoryCache;
+    private readonly IMemoryCache _memoryCache;
 
-    public PostRepository(FitSocialDbContext dbContext, IMemoryCache? memoryCache = null) : base(dbContext)
+    public PostRepository(FitSocialDbContext dbContext, IMemoryCache memoryCache) : base(dbContext)
     {
-        _memoryCache = memoryCache;
+        _memoryCache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
     }
 
     public async Task<Post?> GetByIdWithDetailsAsync(Guid id, CancellationToken cancellationToken = default)
@@ -53,7 +55,7 @@ public class PostRepository : Repository<Post>, IPostRepository
         int pageSize,
         CancellationToken cancellationToken = default)
     {
-        return GetPagedPostsAsync(postType, locationId, authorId, searchTerm, pageNumber, pageSize, "hot", null, null, cancellationToken);
+        return GetPagedPostsAsync(postType, locationId, authorId, searchTerm, pageNumber, pageSize, "hot", null, null, null, cancellationToken);
     }
 
     public Task<(List<Post> Items, int TotalCount)> GetPagedPostsAsync(
@@ -67,7 +69,7 @@ public class PostRepository : Repository<Post>, IPostRepository
         DateTime? asOf,
         CancellationToken cancellationToken = default)
     {
-        return GetPagedPostsAsync(postType, locationId, authorId, searchTerm, pageNumber, pageSize, sortBy, asOf, null, cancellationToken);
+        return GetPagedPostsAsync(postType, locationId, authorId, searchTerm, pageNumber, pageSize, sortBy, asOf, null, null, cancellationToken);
     }
 
     public async Task<(List<Post> Items, int TotalCount)> GetPagedPostsAsync(
@@ -80,15 +82,17 @@ public class PostRepository : Repository<Post>, IPostRepository
         string? sortBy,
         DateTime? asOf,
         string? sessionId,
+        Guid? currentUserId = null,
         CancellationToken cancellationToken = default)
     {
         var query = DbSet.AsNoTracking();
 
         query = query.Where(p => p.IsDeleted == null || p.IsDeleted == false);
 
+        string? normalizedType = null;
         if (!string.IsNullOrWhiteSpace(postType))
         {
-            var normalizedType = postType.Trim().ToUpper();
+            normalizedType = postType.Trim().ToUpper();
             query = query.Where(p => p.PostType.ToUpper() == normalizedType);
         }
 
@@ -134,21 +138,85 @@ public class PostRepository : Repository<Post>, IPostRepository
         }
 
         // Feed Session Snapshot Ranking:
-        // When sessionId is provided and cache is available, freeze the ranking for the session
+        // When sessionId is provided, freeze the ranking for the session
         // so real-time interaction changes (likes/comments) do not shift posts between pages.
-        if (!string.IsNullOrWhiteSpace(sessionId) && _memoryCache != null)
+        if (!string.IsNullOrWhiteSpace(sessionId))
         {
-            var cacheKey = $"feed_session_snapshot_{sessionId.Trim()}";
-            if (!_memoryCache.TryGetValue(cacheKey, out List<Guid>? cachedIds) || cachedIds == null)
+            if (_memoryCache == null)
             {
-                cachedIds = await orderedQuery.Select(p => p.Id).ToListAsync(cancellationToken);
-                _memoryCache.Set(cacheKey, cachedIds, new MemoryCacheEntryOptions
+                throw new InvalidOperationException("IMemoryCache is required to process feed session snapshot requests.");
+            }
+
+            if (!currentUserId.HasValue || currentUserId.Value == Guid.Empty)
+            {
+                throw new ForbiddenException("Authentication is required to use feed session snapshot.");
+            }
+
+            var validUserId = currentUserId.Value;
+            var cacheKey = $"feed_session_snapshot_{sessionId.Trim()}";
+            var normalizedSortBy = !string.IsNullOrWhiteSpace(sortBy) ? sortBy.Trim().ToLowerInvariant() : "hot";
+            var normalizedSearch = !string.IsNullOrWhiteSpace(searchTerm) ? searchTerm.Trim() : null;
+
+            if (_memoryCache.TryGetValue(cacheKey, out FeedSessionSnapshot? snapshot) && snapshot != null)
+            {
+                // Validate Session Ownership
+                if (snapshot.UserId != validUserId)
+                {
+                    throw new ForbiddenException(
+                        "Feed session ownership mismatch. You cannot access a feed session established by another user.");
+                }
+
+                // Validate Query Parameter Consistency
+                var sameType = string.Equals(snapshot.PostType, normalizedType, StringComparison.OrdinalIgnoreCase);
+                var sameLoc = snapshot.LocationId == locationId;
+                var sameAuthor = snapshot.AuthorId == authorId;
+                var sameSearch = string.Equals(snapshot.SearchTerm, normalizedSearch, StringComparison.OrdinalIgnoreCase);
+                var sameSort = string.Equals(snapshot.SortBy, normalizedSortBy, StringComparison.OrdinalIgnoreCase);
+                var samePageSize = snapshot.PageSize == pageSize;
+
+                if (!sameType || !sameLoc || !sameAuthor || !sameSearch || !sameSort || !samePageSize)
+                {
+                    throw new ValidationException(
+                        "Feed SessionId cannot be reused with different search or filter criteria. A new session must be established.");
+                }
+            }
+            else
+            {
+                // Cache Entry Missing / Expired
+                if (pageNumber > 1)
+                {
+                    // CRITICAL: Do NOT silently recalculate a new snapshot for page > 1!
+                    throw new SessionExpiredException("Feed session has expired. Please refresh your feed.");
+                }
+
+                // pageNumber == 1: Create a brand new session snapshot
+                var postIds = await orderedQuery
+                    .Select(p => p.Id)
+                    .Take(1000) // Cache safety cap
+                    .ToListAsync(cancellationToken);
+
+                snapshot = new FeedSessionSnapshot
+                {
+                    SessionId = sessionId.Trim(),
+                    UserId = validUserId,
+                    PostType = normalizedType,
+                    LocationId = locationId,
+                    AuthorId = authorId,
+                    SearchTerm = normalizedSearch,
+                    SortBy = normalizedSortBy,
+                    PageSize = pageSize,
+                    CreatedAt = DateTime.UtcNow,
+                    PostIds = postIds
+                };
+
+                _memoryCache.Set(cacheKey, snapshot, new MemoryCacheEntryOptions
                 {
                     SlidingExpiration = TimeSpan.FromMinutes(20),
                     AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1)
                 });
             }
 
+            var cachedIds = snapshot.PostIds;
             var totalCount = cachedIds.Count;
             var pageIds = cachedIds.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
             if (pageIds.Count == 0)

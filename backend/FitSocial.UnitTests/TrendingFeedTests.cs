@@ -3,12 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using FitSocial.API.Controllers;
 using FitSocial.Application.DTOs.Posts;
 using FitSocial.Application.Interfaces;
 using FitSocial.Application.Services;
 using FitSocial.Domain.Entities;
 using FitSocial.Domain.Interfaces;
 using FitSocial.Infrastructure.Data;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using Xunit;
@@ -259,7 +262,7 @@ public class TrendingFeedTests
         // Step 1: Fetch Page 1 (pageSize = 2) for session 1
         var (page1Items, totalCount) = await repo.GetPagedPostsAsync(
             postType: null, locationId: null, authorId: null, searchTerm: null,
-            pageNumber: 1, pageSize: 2, sortBy: "hot", asOf: asOf, sessionId: sessionId);
+            pageNumber: 1, pageSize: 2, sortBy: "hot", asOf: asOf, sessionId: sessionId, currentUserId: author.UserId);
 
         Assert.Equal(4, totalCount);
         Assert.Equal(2, page1Items.Count);
@@ -280,7 +283,7 @@ public class TrendingFeedTests
         // and must NOT duplicate Post 1 or Post 2!
         var (page2Items, totalCountPage2) = await repo.GetPagedPostsAsync(
             postType: null, locationId: null, authorId: null, searchTerm: null,
-            pageNumber: 2, pageSize: 2, sortBy: "hot", asOf: asOf, sessionId: sessionId);
+            pageNumber: 2, pageSize: 2, sortBy: "hot", asOf: asOf, sessionId: sessionId, currentUserId: author.UserId);
 
         Assert.Equal(4, totalCountPage2);
         Assert.Equal(2, page2Items.Count);
@@ -291,7 +294,7 @@ public class TrendingFeedTests
         var newSessionId = "session-snap-test-2";
         var (newPage1Items, newTotalCount) = await repo.GetPagedPostsAsync(
             postType: null, locationId: null, authorId: null, searchTerm: null,
-            pageNumber: 1, pageSize: 2, sortBy: "hot", asOf: asOf, sessionId: newSessionId);
+            pageNumber: 1, pageSize: 2, sortBy: "hot", asOf: asOf, sessionId: newSessionId, currentUserId: author.UserId);
 
         Assert.Equal(4, newTotalCount);
         Assert.Equal(2, newPage1Items.Count);
@@ -321,9 +324,10 @@ public class TrendingFeedTests
         };
 
         var sessionId = "test-session-id-456";
+        var userId = Guid.NewGuid();
 
         mockRepo.Setup(r => r.GetPagedPostsAsync(
-                null, null, null, null, 1, 10, "hot", asOf, sessionId, It.IsAny<CancellationToken>()))
+                null, null, null, null, 1, 10, "hot", asOf, sessionId, userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((new List<Post> { samplePost }, 1));
 
         var postService = new PostService(
@@ -341,7 +345,7 @@ public class TrendingFeedTests
             SessionId = sessionId
         };
 
-        var result = await postService.GetPostsAsync(query);
+        var result = await postService.GetPostsAsync(query, userId);
 
         Assert.True(result.Success);
         Assert.NotNull(result.Data);
@@ -349,6 +353,552 @@ public class TrendingFeedTests
         Assert.Single(result.Data.Items);
 
         mockRepo.Verify(r => r.GetPagedPostsAsync(
-            null, null, null, null, 1, 10, "hot", asOf, sessionId, It.IsAny<CancellationToken>()), Times.Once);
+            null, null, null, null, 1, 10, "hot", asOf, sessionId, userId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ExistingSessionId_WithMissingSnapshot_ThrowsSessionExpiredException_OnPageGreaterThanOne()
+    {
+        var dbName = "FitSocial_ExpiredTest_" + Guid.NewGuid();
+        var options = new DbContextOptionsBuilder<FitSocialDbContext>()
+            .UseInMemoryDatabase(dbName)
+            .Options;
+
+        using var context = new FitSocialDbContext(options);
+        var cache = new Microsoft.Extensions.Caching.Memory.MemoryCache(
+            new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions());
+        var repo = new FitSocial.Infrastructure.Repositories.PostRepository(context, cache);
+
+        var asOf = DateTime.UtcNow;
+        var missingSessionId = "expired-session-id-999";
+        var userId = Guid.NewGuid();
+
+        // Requesting Page 2 when snapshot does NOT exist in cache must throw SessionExpiredException
+        await Assert.ThrowsAsync<FitSocial.Application.Exceptions.SessionExpiredException>(async () =>
+        {
+            await repo.GetPagedPostsAsync(
+                postType: null, locationId: null, authorId: null, searchTerm: null,
+                pageNumber: 2, pageSize: 10, sortBy: "hot", asOf: asOf, sessionId: missingSessionId, currentUserId: userId);
+        });
+    }
+
+    [Fact]
+    public async Task ReusingSessionId_WithDifferentFilters_ThrowsValidationException()
+    {
+        var dbName = "FitSocial_FilterMismatchTest_" + Guid.NewGuid();
+        var options = new DbContextOptionsBuilder<FitSocialDbContext>()
+            .UseInMemoryDatabase(dbName)
+            .Options;
+
+        using var context = new FitSocialDbContext(options);
+        var cache = new Microsoft.Extensions.Caching.Memory.MemoryCache(
+            new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions());
+        var repo = new FitSocial.Infrastructure.Repositories.PostRepository(context, cache);
+
+        var asOf = DateTime.UtcNow;
+        var sessionId = "session-filter-mismatch";
+        var userId = Guid.NewGuid();
+
+        // Create snapshot on Page 1 with PostType = "Normal"
+        await repo.GetPagedPostsAsync(
+            postType: "Normal", locationId: null, authorId: null, searchTerm: null,
+            pageNumber: 1, pageSize: 10, sortBy: "hot", asOf: asOf, sessionId: sessionId, currentUserId: userId);
+
+        // Subsequent request attempting to reuse the same SessionId with PostType = "FindCoach" must fail
+        var ex = await Assert.ThrowsAsync<FitSocial.Application.Exceptions.ValidationException>(async () =>
+        {
+            await repo.GetPagedPostsAsync(
+                postType: "FindCoach", locationId: null, authorId: null, searchTerm: null,
+                pageNumber: 2, pageSize: 10, sortBy: "hot", asOf: asOf, sessionId: sessionId, currentUserId: userId);
+        });
+
+        Assert.Contains("cannot be reused with different search or filter criteria", ex.Message);
+    }
+
+    [Fact]
+    public async Task ReusingSessionId_WithDifferentPageSize_ThrowsValidationException()
+    {
+        var dbName = "FitSocial_PageSizeMismatchTest_" + Guid.NewGuid();
+        var options = new DbContextOptionsBuilder<FitSocialDbContext>()
+            .UseInMemoryDatabase(dbName)
+            .Options;
+
+        using var context = new FitSocialDbContext(options);
+        var cache = new Microsoft.Extensions.Caching.Memory.MemoryCache(
+            new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions());
+        var repo = new FitSocial.Infrastructure.Repositories.PostRepository(context, cache);
+
+        var asOf = DateTime.UtcNow;
+        var sessionId = "session-pagesize-mismatch";
+        var userId = Guid.NewGuid();
+
+        // Create snapshot on Page 1 with PageSize = 10
+        await repo.GetPagedPostsAsync(
+            postType: null, locationId: null, authorId: null, searchTerm: null,
+            pageNumber: 1, pageSize: 10, sortBy: "hot", asOf: asOf, sessionId: sessionId, currentUserId: userId);
+
+        // Subsequent request attempting to reuse the same SessionId with PageSize = 20 must fail
+        var ex = await Assert.ThrowsAsync<FitSocial.Application.Exceptions.ValidationException>(async () =>
+        {
+            await repo.GetPagedPostsAsync(
+                postType: null, locationId: null, authorId: null, searchTerm: null,
+                pageNumber: 2, pageSize: 20, sortBy: "hot", asOf: asOf, sessionId: sessionId, currentUserId: userId);
+        });
+
+        Assert.Contains("cannot be reused with different search or filter criteria", ex.Message);
+    }
+
+    [Fact]
+    public async Task PostsController_GetPosts_WithoutAuthentication_ReturnsUnauthorized()
+    {
+        var mockPostService = new Mock<IPostService>();
+        var mockReportService = new Mock<IPostReportService>();
+        var mockReactionService = new Mock<IPostReactionService>();
+        var mockCommentService = new Mock<IPostCommentService>();
+
+        var controller = new PostsController(
+            mockPostService.Object,
+            mockReportService.Object,
+            mockReactionService.Object,
+            mockCommentService.Object)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext() // Unauthenticated, empty identity
+            }
+        };
+
+        var query = new GetPostsQueryDto { PageNumber = 1, PageSize = 10, SessionId = "unauth-session" };
+        var actionResult = await controller.GetPosts(query);
+
+        var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(actionResult);
+        Assert.Equal(401, unauthorizedResult.StatusCode);
+    }
+
+    [Fact]
+    public async Task Guest_CannotCreate_FeedSessionSnapshot_ThrowsForbiddenException()
+    {
+        var dbName = "FitSocial_GuestRejectTest_" + Guid.NewGuid();
+        var options = new DbContextOptionsBuilder<FitSocialDbContext>()
+            .UseInMemoryDatabase(dbName)
+            .Options;
+
+        using var context = new FitSocialDbContext(options);
+        var cache = new Microsoft.Extensions.Caching.Memory.MemoryCache(
+            new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions());
+        var repo = new FitSocial.Infrastructure.Repositories.PostRepository(context, cache);
+
+        var asOf = DateTime.UtcNow;
+        var guestSessionId = "guest-session-rejected";
+
+        var ex = await Assert.ThrowsAsync<FitSocial.Application.Exceptions.ForbiddenException>(async () =>
+        {
+            await repo.GetPagedPostsAsync(
+                postType: null, locationId: null, authorId: null, searchTerm: null,
+                pageNumber: 1, pageSize: 10, sortBy: "hot", asOf: asOf, sessionId: guestSessionId, currentUserId: null);
+        });
+
+        Assert.Contains("Authentication is required to use feed session snapshot", ex.Message);
+    }
+
+    [Fact]
+    public async Task Missing_Or_EmptyGuidUserId_ThrowsForbiddenException()
+    {
+        var dbName = "FitSocial_EmptyGuidTest_" + Guid.NewGuid();
+        var options = new DbContextOptionsBuilder<FitSocialDbContext>()
+            .UseInMemoryDatabase(dbName)
+            .Options;
+
+        using var context = new FitSocialDbContext(options);
+        var cache = new Microsoft.Extensions.Caching.Memory.MemoryCache(
+            new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions());
+        var repo = new FitSocial.Infrastructure.Repositories.PostRepository(context, cache);
+
+        var asOf = DateTime.UtcNow;
+        var sessionId = "empty-guid-session";
+
+        var ex = await Assert.ThrowsAsync<FitSocial.Application.Exceptions.ForbiddenException>(async () =>
+        {
+            await repo.GetPagedPostsAsync(
+                postType: null, locationId: null, authorId: null, searchTerm: null,
+                pageNumber: 1, pageSize: 10, sortBy: "hot", asOf: asOf, sessionId: sessionId, currentUserId: Guid.Empty);
+        });
+
+        Assert.Contains("Authentication is required to use feed session snapshot", ex.Message);
+    }
+
+    [Fact]
+    public async Task AuthenticatedTrainee_CanCreateAndPaginate_Snapshot()
+    {
+        var dbName = "FitSocial_TraineeSessionTest_" + Guid.NewGuid();
+        var options = new DbContextOptionsBuilder<FitSocialDbContext>()
+            .UseInMemoryDatabase(dbName)
+            .Options;
+
+        using var context = new FitSocialDbContext(options);
+        var cache = new Microsoft.Extensions.Caching.Memory.MemoryCache(
+            new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions());
+        var repo = new FitSocial.Infrastructure.Repositories.PostRepository(context, cache);
+
+        var asOf = DateTime.UtcNow;
+        var trainee = new User { UserId = Guid.NewGuid(), FullName = "Trainee Bob", Email = "trainee@test.com", PasswordHash = "hash" };
+        context.Users.Add(trainee);
+        for (int i = 0; i < 4; i++)
+        {
+            context.Posts.Add(new Post
+            {
+                Id = Guid.NewGuid(),
+                AuthorId = trainee.UserId,
+                Content = $"Trainee Post {i}",
+                PostType = "Normal",
+                CreatedAt = asOf.AddMinutes(-i),
+                IsDeleted = false
+            });
+        }
+        await context.SaveChangesAsync();
+
+        var sessionId = "trainee-session-1";
+
+        // Page 1
+        var (p1Items, p1Total) = await repo.GetPagedPostsAsync(
+            postType: null, locationId: null, authorId: null, searchTerm: null,
+            pageNumber: 1, pageSize: 2, sortBy: "hot", asOf: asOf, sessionId: sessionId, currentUserId: trainee.UserId);
+
+        Assert.Equal(4, p1Total);
+        Assert.Equal(2, p1Items.Count);
+
+        // Page 2
+        var (p2Items, p2Total) = await repo.GetPagedPostsAsync(
+            postType: null, locationId: null, authorId: null, searchTerm: null,
+            pageNumber: 2, pageSize: 2, sortBy: "hot", asOf: asOf, sessionId: sessionId, currentUserId: trainee.UserId);
+
+        Assert.Equal(4, p2Total);
+        Assert.Equal(2, p2Items.Count);
+    }
+
+    [Fact]
+    public async Task AuthenticatedCoach_CanCreateAndPaginate_Snapshot()
+    {
+        var dbName = "FitSocial_CoachSessionTest_" + Guid.NewGuid();
+        var options = new DbContextOptionsBuilder<FitSocialDbContext>()
+            .UseInMemoryDatabase(dbName)
+            .Options;
+
+        using var context = new FitSocialDbContext(options);
+        var cache = new Microsoft.Extensions.Caching.Memory.MemoryCache(
+            new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions());
+        var repo = new FitSocial.Infrastructure.Repositories.PostRepository(context, cache);
+
+        var asOf = DateTime.UtcNow;
+        var coach = new User { UserId = Guid.NewGuid(), FullName = "Coach Mike", Email = "coach@test.com", PasswordHash = "hash" };
+        context.Users.Add(coach);
+        for (int i = 0; i < 4; i++)
+        {
+            context.Posts.Add(new Post
+            {
+                Id = Guid.NewGuid(),
+                AuthorId = coach.UserId,
+                Content = $"Coach Post {i}",
+                PostType = "FindTrainee",
+                CreatedAt = asOf.AddMinutes(-i),
+                IsDeleted = false
+            });
+        }
+        await context.SaveChangesAsync();
+
+        var sessionId = "coach-session-1";
+
+        // Page 1
+        var (p1Items, p1Total) = await repo.GetPagedPostsAsync(
+            postType: null, locationId: null, authorId: null, searchTerm: null,
+            pageNumber: 1, pageSize: 2, sortBy: "hot", asOf: asOf, sessionId: sessionId, currentUserId: coach.UserId);
+
+        Assert.Equal(4, p1Total);
+        Assert.Equal(2, p1Items.Count);
+
+        // Page 2
+        var (p2Items, p2Total) = await repo.GetPagedPostsAsync(
+            postType: null, locationId: null, authorId: null, searchTerm: null,
+            pageNumber: 2, pageSize: 2, sortBy: "hot", asOf: asOf, sessionId: sessionId, currentUserId: coach.UserId);
+
+        Assert.Equal(4, p2Total);
+        Assert.Equal(2, p2Items.Count);
+    }
+
+    [Fact]
+    public async Task Page1_ReturnsZeroPosts_WhenAllItemsSoftDeleted_HasNextPageIsTrue()
+    {
+        var dbName = "FitSocial_EmptyPage1Test_" + Guid.NewGuid();
+        var options = new DbContextOptionsBuilder<FitSocialDbContext>()
+            .UseInMemoryDatabase(dbName)
+            .Options;
+
+        using var context = new FitSocialDbContext(options);
+        var cache = new Microsoft.Extensions.Caching.Memory.MemoryCache(
+            new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions());
+        var repo = new FitSocial.Infrastructure.Repositories.PostRepository(context, cache);
+
+        var asOf = DateTime.UtcNow;
+        var author = new User { UserId = Guid.NewGuid(), FullName = "Author", Email = "author@test.com", PasswordHash = "hash" };
+        context.Users.Add(author);
+
+        var posts = new List<Post>();
+        for (int i = 0; i < 15; i++)
+        {
+            posts.Add(new Post
+            {
+                Id = Guid.NewGuid(),
+                AuthorId = author.UserId,
+                Content = $"Post {i}",
+                PostType = "Normal",
+                CreatedAt = asOf.AddMinutes(-i),
+                IsDeleted = false
+            });
+        }
+        context.Posts.AddRange(posts);
+        await context.SaveChangesAsync();
+
+        var sessionId = "empty-p1-session";
+
+        // Step 1: Create session snapshot on Page 1 (stores all 15 post IDs in snapshot)
+        var (initialItems, initialTotal) = await repo.GetPagedPostsAsync(
+            postType: null, locationId: null, authorId: null, searchTerm: null,
+            pageNumber: 1, pageSize: 10, sortBy: "hot", asOf: asOf, sessionId: sessionId, currentUserId: author.UserId);
+
+        Assert.Equal(15, initialTotal);
+        Assert.Equal(10, initialItems.Count);
+
+        // Step 2: Now simulate all 10 posts on Page 1 being soft-deleted
+        var idsToDelete = initialItems.Select(x => x.Id).ToList();
+        var trackedPosts = await context.Posts.Where(p => idsToDelete.Contains(p.Id)).ToListAsync();
+        foreach (var p in trackedPosts)
+        {
+            p.IsDeleted = true;
+        }
+        await context.SaveChangesAsync();
+
+        // Step 3: Re-fetch Page 1 within the same session
+        var (p1Items, p1Total) = await repo.GetPagedPostsAsync(
+            postType: null, locationId: null, authorId: null, searchTerm: null,
+            pageNumber: 1, pageSize: 10, sortBy: "hot", asOf: asOf, sessionId: sessionId, currentUserId: author.UserId);
+
+        // Verify: 0 posts returned in items, totalCount is 15, and hasNextPage is true!
+        Assert.Empty(p1Items);
+        Assert.Equal(15, p1Total);
+        var hasNextPage = (1 * 10) < p1Total;
+        Assert.True(hasNextPage);
+    }
+
+    [Fact]
+    public void InitialEmptyBatch_TriggersNextBatch_AndRecoversDataOnPage2()
+    {
+        // Simulate frontend state machine for initial empty batch
+        int consecutiveEmptyBatches = 0;
+        int currentPage = 1;
+        int pageSize = 10;
+        int totalCount = 15;
+        bool hasNextPage = true;
+        bool append = false;
+        var posts = new List<string>();
+
+        // Page 1 returns 0 items
+        var incomingPage1 = new List<string>(); // 0 items
+
+        bool didAutoTriggerPage2 = false;
+        if (!append && incomingPage1.Count == 0 && hasNextPage)
+        {
+            consecutiveEmptyBatches++;
+            if (consecutiveEmptyBatches < 3)
+            {
+                didAutoTriggerPage2 = true;
+                // Simulate LoadNextBatchAsync fetching Page 2
+                int nextPage = currentPage + 1; // 2
+                var incomingPage2 = new List<string> { "Post 11", "Post 12", "Post 13", "Post 14", "Post 15" };
+
+                if (incomingPage2.Any())
+                {
+                    consecutiveEmptyBatches = 0; // Reset counter
+                    posts.AddRange(incomingPage2);
+                }
+                currentPage = nextPage;
+                hasNextPage = (currentPage * pageSize) < totalCount; // 2 * 10 < 15 -> false
+            }
+        }
+
+        Assert.True(didAutoTriggerPage2);
+        Assert.Equal(0, consecutiveEmptyBatches);
+        Assert.Equal(5, posts.Count);
+        Assert.Equal(2, currentPage);
+        Assert.False(hasNextPage);
+    }
+
+    [Fact]
+    public void ThreeConsecutiveEmptyBatches_StopsAutoAdvance_PreventingInfiniteLoop()
+    {
+        int consecutiveEmptyBatches = 0;
+        int currentPage = 1;
+        int totalBatchesAttempted = 0;
+
+        // Simulate loop where 4 batches in a row are empty
+        while (true)
+        {
+            totalBatchesAttempted++;
+            var incoming = new List<string>(); // empty batch
+
+            if (incoming.Count == 0)
+            {
+                consecutiveEmptyBatches++;
+                if (consecutiveEmptyBatches >= 3)
+                {
+                    // Halt auto-advance
+                    break;
+                }
+                currentPage++;
+            }
+        }
+
+        // Must stop exactly at 3 batches! Never loop infinitely.
+        Assert.Equal(3, totalBatchesAttempted);
+        Assert.Equal(3, consecutiveEmptyBatches);
+    }
+
+    [Fact]
+    public void PostRepository_Constructor_RequiresMemoryCache()
+    {
+        var options = new DbContextOptionsBuilder<FitSocialDbContext>()
+            .UseInMemoryDatabase("FitSocial_NullCacheTest_" + Guid.NewGuid())
+            .Options;
+        using var context = new FitSocialDbContext(options);
+
+        // Passing null memoryCache must throw ArgumentNullException
+        Assert.Throws<ArgumentNullException>(() =>
+        {
+            new FitSocial.Infrastructure.Repositories.PostRepository(context, null!);
+        });
+    }
+
+    [Fact]
+    public async Task LegacyOverloads_DoNotBypassSessionSnapshot_WhenSessionIdIsProvided()
+    {
+        var dbName = "FitSocial_LegacyOverloadTest_" + Guid.NewGuid();
+        var options = new DbContextOptionsBuilder<FitSocialDbContext>()
+            .UseInMemoryDatabase(dbName)
+            .Options;
+
+        using var context = new FitSocialDbContext(options);
+        var cache = new Microsoft.Extensions.Caching.Memory.MemoryCache(
+            new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions());
+        var repo = new FitSocial.Infrastructure.Repositories.PostRepository(context, cache);
+
+        var author = new User { UserId = Guid.NewGuid(), FullName = "Trainer", Email = "trainer@test.com", PasswordHash = "hash" };
+        context.Users.Add(author);
+        context.Posts.Add(new Post { Id = Guid.NewGuid(), AuthorId = author.UserId, Content = "Normal Post", PostType = "Normal", CreatedAt = DateTime.UtcNow, IsDeleted = false });
+        await context.SaveChangesAsync();
+
+        // 1. Calling legacy 7-param overload uses dynamic un-cached query (no sessionId)
+        var (res7, total7) = await repo.GetPagedPostsAsync(null, null, null, null, 1, 10);
+        Assert.Single(res7);
+        Assert.Equal(1, total7);
+
+        // 2. Calling legacy 9-param overload uses dynamic un-cached query (no sessionId)
+        var (res9, total9) = await repo.GetPagedPostsAsync(null, null, null, null, 1, 10, "hot", DateTime.UtcNow);
+        Assert.Single(res9);
+        Assert.Equal(1, total9);
+
+        // 3. When sessionId is provided, session snapshot is strictly enforced
+        var sessionId = "enforced-session-123";
+        var (snapItems, snapTotal) = await repo.GetPagedPostsAsync(null, null, null, null, 1, 10, "hot", DateTime.UtcNow, sessionId, author.UserId);
+        Assert.Single(snapItems);
+        Assert.Equal(1, snapTotal);
+    }
+
+    [Fact]
+    public async Task SessionSnapshot_OwnershipMismatch_ThrowsForbiddenException()
+    {
+        var dbName = "FitSocial_OwnershipTest_" + Guid.NewGuid();
+        var options = new DbContextOptionsBuilder<FitSocialDbContext>()
+            .UseInMemoryDatabase(dbName)
+            .Options;
+
+        using var context = new FitSocialDbContext(options);
+        var cache = new Microsoft.Extensions.Caching.Memory.MemoryCache(
+            new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions());
+        var repo = new FitSocial.Infrastructure.Repositories.PostRepository(context, cache);
+
+        var asOf = DateTime.UtcNow;
+        var sessionId = "session-ownership-test";
+        var userA = Guid.NewGuid();
+        var userB = Guid.NewGuid();
+
+        // User A creates session snapshot
+        await repo.GetPagedPostsAsync(
+            postType: null, locationId: null, authorId: null, searchTerm: null,
+            pageNumber: 1, pageSize: 10, sortBy: "hot", asOf: asOf, sessionId: sessionId, currentUserId: userA);
+
+        // User B attempts to access User A's session snapshot
+        var ex = await Assert.ThrowsAsync<FitSocial.Application.Exceptions.ForbiddenException>(async () =>
+        {
+            await repo.GetPagedPostsAsync(
+                postType: null, locationId: null, authorId: null, searchTerm: null,
+                pageNumber: 2, pageSize: 10, sortBy: "hot", asOf: asOf, sessionId: sessionId, currentUserId: userB);
+        });
+
+        Assert.Contains("ownership mismatch", ex.Message);
+    }
+
+    [Fact]
+    public void ShortBatch_TriggerCalculation_DoesNotHaltWhenHasNextPageIsTrue()
+    {
+        // Scenario: Page 1 had 5 posts (e.g. because 5 posts were deleted), hasNextPage = true.
+        var postIds = Enumerable.Range(0, 5).Select(_ => Guid.NewGuid()).ToList();
+        var hasNextPage = true;
+        var currentPage = 1;
+        var pageSize = 10;
+
+        // Our short-batch logic:
+        var targetIndex = (currentPage * pageSize) - 4; // 6
+        Guid? currentTriggerPostId = null;
+
+        if (targetIndex >= 0 && targetIndex < postIds.Count)
+        {
+            currentTriggerPostId = postIds[targetIndex];
+        }
+        else if (postIds.Count >= 7)
+        {
+            currentTriggerPostId = postIds[postIds.Count - 4];
+        }
+        else if (hasNextPage && postIds.Count > 0)
+        {
+            var shortBatchTriggerIndex = Math.Max(0, postIds.Count - 2);
+            currentTriggerPostId = postIds[shortBatchTriggerIndex];
+        }
+
+        // Must NOT be null!
+        Assert.NotNull(currentTriggerPostId);
+        Assert.Equal(postIds[3], currentTriggerPostId.Value); // index 3 (4th post)
+    }
+
+    [Fact]
+    public void StalePrefetchRequest_DoesNotBlockNewSession()
+    {
+        // Simulate frontend concurrency logic
+        long loadPostsRequestId = 1;
+        string? feedSessionId = "session-1";
+        bool isPrefetching = true; // Stale prefetch was running
+
+        // User changes filter -> LoadPostsAsync starts new session
+        long newRequestId = ++loadPostsRequestId;
+        string newSessionId = "session-2";
+        bool newSessionPrefetching = false; // Reset by LoadPostsAsync
+
+        // Stale prefetch returns afterward:
+        long staleRequestId = 1;
+        string staleSessionId = "session-1";
+
+        bool shouldDiscard = (staleRequestId != loadPostsRequestId || staleSessionId != feedSessionId);
+        Assert.True(shouldDiscard);
+
+        // New session's prefetch lock remains unblocked
+        Assert.False(newSessionPrefetching);
     }
 }

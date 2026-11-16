@@ -193,15 +193,31 @@
         return null;
     }
 
+    private static bool IsSafeLocalUrl(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return false;
+        if (url.Contains("://") ||
+            url.StartsWith("http:", StringComparison.OrdinalIgnoreCase) ||
+            url.StartsWith("https:", StringComparison.OrdinalIgnoreCase) ||
+            url.StartsWith("javascript:", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+        if (url.StartsWith("//") || url.StartsWith("/\\") || url.StartsWith("\\\\"))
+        {
+            return false;
+        }
+        return true;
+    }
+
     private void NavigateAfterLogin(string? roleCode = null)
     {
         bool isBackOffice = string.Equals(roleCode?.Trim(), AppRoles.Admin, StringComparison.OrdinalIgnoreCase)
             || string.Equals(roleCode?.Trim(), AppRoles.Staff, StringComparison.OrdinalIgnoreCase);
 
-        if (!string.IsNullOrWhiteSpace(ReturnUrl) &&
-            !ReturnUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+        if (IsSafeLocalUrl(ReturnUrl))
         {
-            bool wantsAdminArea = ReturnUrl.TrimStart('/').StartsWith("admin", StringComparison.OrdinalIgnoreCase);
+            bool wantsAdminArea = ReturnUrl!.TrimStart('/').StartsWith("admin", StringComparison.OrdinalIgnoreCase);
             if (wantsAdminArea == isBackOffice)
             {
                 Navigation.NavigateTo(ReturnUrl);
