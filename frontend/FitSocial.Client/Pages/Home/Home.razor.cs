@@ -138,6 +138,7 @@ public partial class Home : ComponentBase, IAsyncDisposable
         Shell.SearchClearHandler = ClearSearch;
         Shell.LogoClickHandler = HandleLogoClick;
         Shell.SearchTerm = searchInput;
+        Shell.SearchPlaceholder = "Search posts...";
         UpdateHeaderSearchExtra();
 
         await LoadUserInfoAsync();
