@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using FitSocial.Application.DTOs.Coach;
@@ -30,11 +31,24 @@ public class AnalyticsController : ControllerBase
     [HttpGet("coach/{coachId}")]
     [ProducesResponseType(typeof(ApiResponseDto<CoachDashboardDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponseDto<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponseDto<object>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ApiResponseDto<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetCoachAnalytics(Guid coachId, CancellationToken cancellationToken = default)
     {
-        // Có thể áp dụng validate Authorization ở đây nếu cần (chỉ Coach chính nó hoặc Admin mới có quyền xem)
-        // Ví dụ: var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        // Khóa chống IDOR: Chỉ Coach chính chủ hoặc Admin/Staff mới có quyền xem dữ liệu phân tích
+        var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? User.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var currentUserId))
+        {
+            return Unauthorized(ApiResponseDto<object>.Fail("Unauthorized: Invalid user credentials."));
+        }
+
+        var isAuditAuthorized = User.IsInRole("ADMIN") || User.IsInRole("STAFF");
+        if (!isAuditAuthorized && currentUserId != coachId)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, ApiResponseDto<object>.Fail("Access denied: You are only allowed to view your own analytics."));
+        }
 
         var result = await _dashboardService.GetCoachDashboardAnalyticsAsync(coachId, cancellationToken);
         return Ok(result);

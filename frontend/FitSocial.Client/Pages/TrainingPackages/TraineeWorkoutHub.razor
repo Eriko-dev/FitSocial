@@ -3,6 +3,7 @@
 @implements IDisposable
 @attribute [Authorize]
 @inject FitSocial.Client.Services.TrainingPlans.ITrainingPlanClientService TrainingPlanService
+@inject FitSocial.Client.Services.Files.IFileUploadService FileUploadService
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthStateProvider
 @inject AppShellContext Shell
@@ -38,10 +39,13 @@
                     <span class="px-3.5 py-1.5 bg-[#FF5500] text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-1.5">
                         <span>Workout Hub</span>
                     </span>
-                    <a href="/training-packages/meal-plan/@OrderDetailsId"
-                       class="px-3.5 py-1.5 bg-white border border-gray-200 text-gray-600 text-xs font-semibold rounded-xl hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 transition shadow-2xs flex items-center gap-1.5">
-                        <span>Meal Plan</span>
-                    </a>
+                    @if (workoutPlan == null || !string.Equals(workoutPlan.PackageType, "WORKOUT", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <a href="/training-packages/meal-plan/@OrderDetailsId"
+                           class="px-3.5 py-1.5 bg-white border border-gray-200 text-gray-600 text-xs font-semibold rounded-xl hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 transition shadow-2xs flex items-center gap-1.5">
+                            <span>Meal Plan</span>
+                        </a>
+                    }
                     <a href="/training-packages/purchased" class="px-3.5 py-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-semibold rounded-xl hover:bg-gray-50 transition shadow-2xs">
                         Back to List
                     </a>
@@ -124,29 +128,91 @@
                                 </div>
                                 <h1 class="text-xl sm:text-2xl font-black text-gray-900 leading-snug">@workoutPlan.PackageTitle</h1>
                                 <p class="text-xs sm:text-sm text-gray-500 mt-1 line-clamp-2">@workoutPlan.PlanTitle - @(string.IsNullOrWhiteSpace(workoutPlan.PlanDescription) ? "Follow your scheduled exercises and complete daily sessions." : workoutPlan.PlanDescription)</p>
+                                @if (workoutPlan.StartDate.HasValue || workoutPlan.EndDate.HasValue)
+                                {
+                                    <div class="flex flex-wrap items-center gap-2 mt-2 text-xs">
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-100 text-gray-700 font-semibold border border-gray-200/80">
+                                            <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                            <span>@(workoutPlan.StartDate?.ToString("dd/MM/yyyy") ?? "—") → @(workoutPlan.EndDate?.ToString("dd/MM/yyyy") ?? "—")</span>
+                                        </span>
+                                        @if (workoutPlan.RemainingDays.HasValue)
+                                        {
+                                            if (workoutPlan.RemainingDays.Value > 0)
+                                            {
+                                                <span class="px-2.5 py-1 rounded-lg font-bold border @(workoutPlan.RemainingDays.Value <= 5 ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-emerald-50 text-emerald-700 border-emerald-200")">
+                                                    @workoutPlan.RemainingDays.Value day(s) remaining
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="px-2.5 py-1 rounded-lg font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                                    Plan Period Ended
+                                                </span>
+                                            }
+                                        }
+                                    </div>
+                                }
                             </div>
                         </div>
 
-                        <!-- Progress Summary Card -->
-                        <div class="bg-gray-50 border border-gray-200/70 rounded-2xl p-4 flex items-center gap-5 md:min-w-[280px]">
-                            <div class="relative w-16 h-16 flex-shrink-0 flex items-center justify-center">
-                                <svg class="w-16 h-16 transform -rotate-90" viewBox="0 0 36 36">
-                                    <path class="text-gray-200" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                    <path class="text-[#FF5500] transition-all duration-700 ease-out" stroke-dasharray="@($"{workoutPlan.ProgressPercentage}, 100")" stroke-width="3.5" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                </svg>
-                                <span class="absolute font-black text-xs text-gray-800">@($"{workoutPlan.ProgressPercentage:N0}%")</span>
+                        <!-- Progress & Adherence Summary Cards -->
+                        <div class="flex flex-col sm:flex-row items-stretch gap-3 md:min-w-[360px]">
+                            <!-- Overall Progress -->
+                            <div class="bg-gray-50 border border-gray-200/70 rounded-2xl p-4 flex items-center gap-4 flex-1">
+                                <div class="relative w-14 h-14 flex-shrink-0 flex items-center justify-center">
+                                    <svg class="w-14 h-14 transform -rotate-90" viewBox="0 0 36 36">
+                                        <path class="text-gray-200" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                        <path class="text-[#FF5500] transition-all duration-700 ease-out" stroke-dasharray="@($"{workoutPlan.ProgressPercentage}, 100")" stroke-width="3.5" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                    </svg>
+                                    <span class="absolute font-black text-xs text-gray-800">@($"{workoutPlan.ProgressPercentage:N0}%")</span>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <span class="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">Overall Progress</span>
+                                    <p class="text-sm font-black text-gray-900 mt-0.5">
+                                        @workoutPlan.CompletedExercisesCount / @workoutPlan.TotalExercisesCount <span class="text-xs font-normal text-gray-500">Done</span>
+                                    </p>
+                                    <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-1.5">
+                                        <div class="bg-gradient-to-r from-orange-500 to-[#FF5500] h-full rounded-full transition-all duration-500" style="width: @($"{workoutPlan.ProgressPercentage}%")"></div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="flex-1 min-w-0">
-                                <span class="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">Overall Progress</span>
-                                <p class="text-sm font-black text-gray-900 mt-0.5">
-                                    @workoutPlan.CompletedExercisesCount / @workoutPlan.TotalExercisesCount <span class="text-xs font-normal text-gray-500">Exercises Done</span>
-                                </p>
-                                <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-1.5">
-                                    <div class="bg-gradient-to-r from-orange-500 to-[#FF5500] h-full rounded-full transition-all duration-500" style="width: @($"{workoutPlan.ProgressPercentage}%")"></div>
+
+                            <!-- Adherence Rate -->
+                            <div class="bg-gray-50 border border-gray-200/70 rounded-2xl p-4 flex items-center gap-4 flex-1">
+                                <div class="relative w-14 h-14 flex-shrink-0 flex items-center justify-center">
+                                    <svg class="w-14 h-14 transform -rotate-90" viewBox="0 0 36 36">
+                                        <path class="text-gray-200" stroke-width="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                        <path class="@(workoutPlan.AdherenceRate >= 80 ? "text-emerald-500" : workoutPlan.AdherenceRate >= 50 ? "text-amber-500" : "text-rose-500") transition-all duration-700 ease-out" stroke-dasharray="@($"{workoutPlan.AdherenceRate}, 100")" stroke-width="3.5" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                    </svg>
+                                    <span class="absolute font-black text-xs text-gray-800">@($"{workoutPlan.AdherenceRate:N0}%")</span>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <span class="text-[10px] uppercase font-bold text-gray-400 block tracking-wider">Adherence Rate</span>
+                                    <p class="text-sm font-black text-gray-900 mt-0.5">
+                                        <span class="@(workoutPlan.AdherenceRate >= 80 ? "text-emerald-700" : "text-amber-700")">@workoutPlan.AdherenceRate%</span>
+                                        @if (workoutPlan.MissedExercisesCount > 0)
+                                        {
+                                            <span class="text-[11px] font-normal text-rose-600 block">(@workoutPlan.MissedExercisesCount missed)</span>
+                                        }
+                                    </p>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    @if (workoutPlan.RemainingDays.HasValue && workoutPlan.RemainingDays.Value <= 5 && workoutPlan.ProgressPercentage < 50 && workoutPlan.TotalExercisesCount > 0 && workoutPlan.CompletedExercisesCount < workoutPlan.TotalExercisesCount)
+                    {
+                        <!-- Cảnh báo gói tập sắp hết hạn nhưng tiến độ còn quá thấp -->
+                        <div class="mt-4 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 flex items-start gap-3">
+                            <svg class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            <div class="text-xs">
+                                <strong class="font-bold text-amber-900 block text-sm mb-0.5">Cảnh báo tiến độ tập luyện thấp!</strong>
+                                Gói tập của bạn chỉ còn <strong>@workoutPlan.RemainingDays.Value ngày</strong> nhưng bạn mới hoàn thành <strong>@workoutPlan.ProgressPercentage%</strong> giáo án. Hãy tích cực tập luyện để hoàn thành mục tiêu trước khi gói tập hết hạn!
+                            </div>
+                        </div>
+                    }
 
                     <!-- Week & Day Selectors -->
                     <div class="pt-5 flex flex-col gap-4">
@@ -277,6 +343,18 @@
                                                     Completed
                                                 </span>
                                             }
+                                            else if (string.Equals(ex.Status, "PENDING_REVIEW", StringComparison.OrdinalIgnoreCase))
+                                            {
+                                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200 animate-pulse">
+                                                    ⏳ Chờ HLV duyệt
+                                                </span>
+                                            }
+                                            else if (string.Equals(ex.Status, "UNCOMPLETE", StringComparison.OrdinalIgnoreCase))
+                                            {
+                                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                                                    ⚠️ Chưa đạt / Cần tập lại
+                                                </span>
+                                            }
                                         </div>
 
                                         <!-- Specifications Badges (Sets, Reps, Rest, Duration) -->
@@ -318,9 +396,84 @@
                                         <!-- Trainee Notes (if logged) -->
                                         @if (!string.IsNullOrWhiteSpace(ex.TraineeNotes))
                                         {
-                                            <p class="text-xs text-emerald-700 bg-emerald-50/70 p-2 rounded-lg border border-emerald-100">
-                                                <strong class="font-semibold">Your Note:</strong> @ex.TraineeNotes
-                                            </p>
+                                            <div class="text-xs text-emerald-800 bg-emerald-50/80 p-2.5 rounded-xl border border-emerald-200/60 mt-1 flex items-start gap-2">
+                                                <svg class="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.5L19 7.5V19a2 2 0 01-2 2z"></path></svg>
+                                                <span class="break-words leading-relaxed"><strong class="font-semibold text-emerald-900">Your Note:</strong> @ex.TraineeNotes</span>
+                                            </div>
+                                        }
+
+                                        <!-- Proof Media (if submitted) -->
+                                        @if (!string.IsNullOrWhiteSpace(ex.MediaUrl))
+                                        {
+                                            <div class="mt-1.5 flex items-center gap-2 text-xs">
+                                                <span class="text-gray-500 font-semibold">Minh chứng:</span>
+                                                <a href="@ex.MediaUrl" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-700 underline font-bold flex items-center gap-1">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                                                    Xem ảnh / video đã nộp
+                                                </a>
+                                            </div>
+                                        }
+
+                                        <!-- Coach Feedback (if reviewed) -->
+                                        @if (!string.IsNullOrWhiteSpace(ex.CoachFeedback))
+                                        {
+                                            <div class="mt-2 p-2.5 rounded-xl border text-xs @(string.Equals(ex.Status, "UNCOMPLETE", StringComparison.OrdinalIgnoreCase) ? "bg-rose-50 border-rose-200 text-rose-900" : "bg-blue-50 border-blue-200 text-blue-900")">
+                                                <div class="flex items-center gap-1.5 font-bold mb-0.5">
+                                                    <svg class="w-4 h-4 @(string.Equals(ex.Status, "UNCOMPLETE", StringComparison.OrdinalIgnoreCase) ? "text-rose-600" : "text-blue-600")" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                                                    <span>Phản hồi của HLV:</span>
+                                                </div>
+                                                <p class="italic">"@ex.CoachFeedback"</p>
+                                            </div>
+                                        }
+
+                                        <!-- Trainee Note Input Before Completing -->
+                                        @if (!ex.IsCompleted && (CurrentDay?.IsToday ?? false))
+                                        {
+                                            <div class="mt-2.5">
+                                                <div class="relative flex items-center">
+                                                    <input type="text"
+                                                           maxlength="300"
+                                                           placeholder="Add your workout note (e.g. 20kg dumbbell, 12 reps, felt great... max 300 chars)"
+                                                           value="@GetExerciseNote(ex.TrainingPlanExerciseId)"
+                                                           @oninput="(e) => SetExerciseNote(ex.TrainingPlanExerciseId, e.Value?.ToString())"
+                                                           class="w-full text-xs px-3.5 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-[#FF5500] focus:ring-1 focus:ring-[#FF5500] bg-white shadow-2xs placeholder-gray-400" />
+                                                </div>
+                                            </div>
+                                        }
+
+                                        <!-- Missed Reason for Past Workout -->
+                                        @if (!ex.IsCompleted && IsDayPast(ex))
+                                        {
+                                            <div class="mt-2.5 flex flex-col gap-1.5">
+                                                @if (!string.IsNullOrWhiteSpace(ex.TraineeNotes))
+                                                {
+                                                    <div class="text-xs text-rose-800 bg-rose-50 p-2.5 rounded-xl border border-rose-200 flex items-start gap-2">
+                                                        <svg class="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                                        <span class="break-words leading-relaxed"><strong class="font-semibold text-rose-900">Lý do bỏ lỡ:</strong> @ex.TraineeNotes</span>
+                                                    </div>
+                                                }
+                                                <div class="flex items-center gap-2">
+                                                    <input type="text"
+                                                           maxlength="300"
+                                                           placeholder="Nhập lý do bạn bỏ lỡ bài tập này..."
+                                                           value="@GetExerciseNote(ex.TrainingPlanExerciseId)"
+                                                           @oninput="(e) => SetExerciseNote(ex.TrainingPlanExerciseId, e.Value?.ToString())"
+                                                           class="flex-1 text-xs px-3.5 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-rose-400 focus:ring-1 focus:ring-rose-400 bg-white shadow-2xs placeholder-gray-400" />
+                                                    <button type="button"
+                                                            disabled="@(togglingExerciseId == ex.TrainingPlanExerciseId)"
+                                                            @onclick="() => HandleSaveMissedReason(ex)"
+                                                            class="px-3.5 py-2 bg-gray-800 hover:bg-gray-900 text-white rounded-xl text-xs font-bold transition cursor-pointer disabled:opacity-50 flex items-center gap-1">
+                                                        @if (togglingExerciseId == ex.TrainingPlanExerciseId)
+                                                        {
+                                                            <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span>Lưu lý do</span>
+                                                        }
+                                                    </button>
+                                                </div>
+                                            </div>
                                         }
                                     </div>
 
@@ -345,6 +498,15 @@
                                                 Completed
                                             </span>
                                         }
+                                        else if (string.Equals(ex.Status, "PENDING_REVIEW", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            <button type="button"
+                                                    @onclick="() => OpenSubmitProofModal(ex)"
+                                                    class="px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1.5 hover:bg-amber-100 transition cursor-pointer"
+                                                    title="Bấm để xem lại hoặc cập nhật minh chứng">
+                                                <span>⏳ Chờ duyệt</span>
+                                            </button>
+                                        }
                                         else if (!(CurrentDay?.IsToday ?? false))
                                         {
                                             @* Past or future day: the Complete action is not available. *@
@@ -356,17 +518,10 @@
                                         {
                                             <button type="button"
                                                     disabled="@(togglingExerciseId == ex.TrainingPlanExerciseId)"
-                                                    @onclick="() => HandleMarkComplete(ex)"
+                                                    @onclick="() => OpenSubmitProofModal(ex)"
                                                     class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs bg-[#FF5500] hover:bg-orange-600 text-white disabled:opacity-50">
-                                                @if (togglingExerciseId == ex.TrainingPlanExerciseId)
-                                                {
-                                                    <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                                                }
-                                                else
-                                                {
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                                    <span>Complete</span>
-                                                }
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                                <span>@(string.Equals(ex.Status, "UNCOMPLETE", StringComparison.OrdinalIgnoreCase) ? "Nộp lại" : "Complete")</span>
                                             </button>
                                         }
                                     </div>
@@ -389,6 +544,88 @@
                          OnReportSubmitted="HandleCoachReportSubmitted" />
     }
 
+    <!-- Modal Nộp minh chứng hoàn thành bài tập -->
+    @if (showProofModal && submittingExercise != null)
+    {
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-xs z-[100] flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full flex flex-col overflow-hidden animate-in fade-in zoom-in-95">
+                <div class="p-5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-xl bg-orange-50 text-[#FF5500] flex items-center justify-center font-black">
+                            🏋️
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-black text-gray-900">Hoàn thành: @submittingExercise.ExerciseName</h3>
+                            <p class="text-[11px] text-gray-400">Gửi minh chứng để HLV duyệt hoàn thành bài tập</p>
+                        </div>
+                    </div>
+                    <button type="button" @onclick="CloseSubmitProofModal" class="w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center cursor-pointer">
+                        &times;
+                    </button>
+                </div>
+
+                <div class="p-5 flex flex-col gap-4 text-xs">
+                    <!-- File Upload -->
+                    <div>
+                        <label class="font-bold text-gray-700 block mb-1">Ảnh hoặc Video tập luyện:</label>
+                        <InputFile OnChange="HandleProofFileUpload" accept="image/*,video/*" class="w-full text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-orange-50 file:text-[#FF5500] hover:file:bg-orange-100 cursor-pointer" />
+                        @if (isUploadingProof)
+                        {
+                            <div class="mt-2 flex items-center gap-2 text-orange-600 font-semibold">
+                                <span class="w-3.5 h-3.5 border-2 border-orange-600 border-t-transparent rounded-full animate-spin"></span>
+                                <span>Đang tải file lên Cloudinary...</span>
+                            </div>
+                        }
+                        else if (!string.IsNullOrWhiteSpace(proofMediaUrl))
+                        {
+                            <div class="mt-2 p-2 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-emerald-800">
+                                <span class="truncate max-w-xs font-medium">✓ Đã đính kèm minh chứng</span>
+                                <a href="@proofMediaUrl" target="_blank" rel="noopener noreferrer" class="text-blue-600 font-bold underline">Xem</a>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Or manual URL -->
+                    <div>
+                        <label class="font-semibold text-gray-500 block mb-1">Hoặc dán URL video / ảnh:</label>
+                        <input type="text"
+                               @bind="proofMediaUrl"
+                               placeholder="https://..."
+                               class="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-[#FF5500]" />
+                    </div>
+
+                    <!-- Notes -->
+                    <div>
+                        <label class="font-bold text-gray-700 block mb-1">Ghi chú của bạn (cảm nhận, mức tạ, số rep...):</label>
+                        <textarea @bind="proofNotes"
+                                  maxlength="300"
+                                  rows="3"
+                                  placeholder="Ví dụ: Em đã hoàn thành 4 set với mức tạ 30kg, form bài này em thấy đã chuẩn hơn..."
+                                  class="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-[#FF5500] resize-none"></textarea>
+                        <div class="text-right text-[10px] text-gray-400">@((proofNotes?.Length ?? 0))/300</div>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-2">
+                    <button type="button" @onclick="CloseSubmitProofModal" disabled="@isSubmittingProof" class="px-4 py-2 bg-gray-200 text-gray-700 font-bold rounded-xl text-xs hover:bg-gray-300 transition cursor-pointer">
+                        Hủy
+                    </button>
+                    <button type="button" @onclick="SubmitProofAsync" disabled="@(isSubmittingProof || isUploadingProof)" class="px-4 py-2 bg-[#FF5500] text-white font-bold rounded-xl text-xs hover:bg-orange-600 transition cursor-pointer flex items-center gap-1.5 disabled:opacity-50">
+                        @if (isSubmittingProof)
+                        {
+                            <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            <span>Đang gửi...</span>
+                        }
+                        else
+                        {
+                            <span>Gửi HLV duyệt</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
 @code {
     [Parameter]
     public Guid OrderDetailsId { get; set; }
@@ -403,6 +640,22 @@
     private short selectedDayNumber = 1;
     private TraineeWorkoutExerciseDto? activeExercise;
     private Guid? togglingExerciseId;
+    private readonly Dictionary<Guid, string> exerciseNotes = new();
+
+    private string GetExerciseNote(Guid exerciseId) =>
+        exerciseNotes.TryGetValue(exerciseId, out var n) ? n : string.Empty;
+
+    private void SetExerciseNote(Guid exerciseId, string? val)
+    {
+        if (string.IsNullOrWhiteSpace(val))
+        {
+            exerciseNotes.Remove(exerciseId);
+        }
+        else
+        {
+            exerciseNotes[exerciseId] = val;
+        }
+    }
 
     private TraineeWorkoutWeekDto? CurrentWeek =>
         workoutPlan?.Weeks.FirstOrDefault(w => w.WeekNumber == selectedWeekNumber)
@@ -412,8 +665,9 @@
         CurrentWeek?.Days.FirstOrDefault(d => d.DayNumber == selectedDayNumber)
         ?? CurrentWeek?.Days.FirstOrDefault();
 
-    /// <summary>UTC today, matching how the backend derives IsToday.</summary>
-    private static DateTime UtcToday => DateTime.UtcNow.Date;
+    /// <summary>Business today in UTC+7, matching how the backend derives IsToday.</summary>
+    private static readonly TimeSpan BusinessTimeZoneOffset = TimeSpan.FromHours(7);
+    private static DateTime BusinessToday => DateTime.UtcNow.Add(BusinessTimeZoneOffset).Date;
 
     private static string FormatDayLabel(TraineeWorkoutDayDto day)
     {
@@ -423,18 +677,19 @@
         }
 
         var date = day.ScheduledDate.Value;
+        var dayOfWeek = date.ToString("ddd");
         var label = date.ToString("dd/MM");
 
         return day.IsToday
-            ? $"Day {day.DayNumber} · {label} · Today"
-            : $"Day {day.DayNumber} · {label}";
+            ? $"{dayOfWeek} ({label}) · Today"
+            : $"{dayOfWeek} ({label})";
     }
 
-    /// <summary>True when the exercise's scheduled day is before UTC today.</summary>
+    /// <summary>True when the exercise's scheduled day is before business today (UTC+7).</summary>
     private bool IsDayPast(TraineeWorkoutExerciseDto ex)
     {
         var date = ex.ScheduledDate ?? CurrentDay?.ScheduledDate;
-        return date.HasValue && date.Value.Date < UtcToday;
+        return date.HasValue && date.Value.Date < BusinessToday;
     }
 
     protected override async Task OnInitializedAsync()
@@ -508,11 +763,13 @@
         }
 
         togglingExerciseId = ex.TrainingPlanExerciseId;
+        var note = GetExerciseNote(ex.TrainingPlanExerciseId);
         var dto = new ToggleWorkoutCompletionDto
         {
             TrainingPlanExerciseId = ex.TrainingPlanExerciseId,
-            LogDate = ex.ScheduledDate ?? CurrentDay?.ScheduledDate ?? DateTime.UtcNow,
-            Status = "COMPLETED"
+            LogDate = ex.ScheduledDate ?? CurrentDay?.ScheduledDate ?? BusinessToday,
+            Status = "COMPLETED",
+            Notes = string.IsNullOrWhiteSpace(note) ? null : note.Trim()
         };
 
         var res = await TrainingPlanService.ToggleWorkoutCompletionAsync(dto);
@@ -522,11 +779,18 @@
             ex.WorkoutCompletionLogId = res.Data.WorkoutCompletionLogId;
             ex.CompletedAt = res.Data.CompletedAt;
             ex.Status = res.Data.Status;
+            ex.TraineeNotes = res.Data.Notes;
+            exerciseNotes.Remove(ex.TrainingPlanExerciseId);
 
             if (workoutPlan != null)
             {
                 workoutPlan.TotalExercisesCount = res.Data.TotalExercisesCount;
                 workoutPlan.CompletedExercisesCount = res.Data.CompletedExercisesCount;
+                int missed = workoutPlan.Weeks.Sum(w => w.Days.Sum(d => d.Exercises.Count(e => string.Equals(e.Status, "INCOMPLETE", StringComparison.OrdinalIgnoreCase))));
+                workoutPlan.MissedExercisesCount = missed;
+                workoutPlan.AdherenceRate = (workoutPlan.CompletedExercisesCount + missed) > 0
+                    ? Math.Round((double)workoutPlan.CompletedExercisesCount / (workoutPlan.CompletedExercisesCount + missed) * 100, 1)
+                    : 100;
             }
 
             // Recalculate day and week counts
@@ -539,11 +803,52 @@
                 CurrentWeek.CompletedExercises = CurrentWeek.Days.Sum(d => d.CompletedExercises);
             }
 
-            ShowToast($"Great job! Completed {ex.ExerciseName}!");
+            if (res.Data.ProgressPercentage >= 100)
+            {
+                ShowToast("🎉 Congratulations! You have completed 100% of your training plan!");
+            }
+            else
+            {
+                ShowToast($"Great job! Completed {ex.ExerciseName}!");
+            }
         }
         else
         {
             ShowToast(res.Message ?? "Unable to update workout status.");
+        }
+
+        togglingExerciseId = null;
+    }
+
+    private async Task HandleSaveMissedReason(TraineeWorkoutExerciseDto ex)
+    {
+        var note = GetExerciseNote(ex.TrainingPlanExerciseId);
+        if (string.IsNullOrWhiteSpace(note))
+        {
+            ShowToast("Vui lòng nhập lý do bạn bỏ lỡ bài tập này.");
+            return;
+        }
+
+        togglingExerciseId = ex.TrainingPlanExerciseId;
+        var dto = new ToggleWorkoutCompletionDto
+        {
+            TrainingPlanExerciseId = ex.TrainingPlanExerciseId,
+            LogDate = ex.ScheduledDate ?? CurrentDay?.ScheduledDate ?? BusinessToday,
+            Status = "INCOMPLETE",
+            Notes = note.Trim()
+        };
+
+        var res = await TrainingPlanService.ToggleWorkoutCompletionAsync(dto);
+        if (res.Success && res.Data != null)
+        {
+            ex.Status = "INCOMPLETE";
+            ex.TraineeNotes = res.Data.Notes;
+            exerciseNotes.Remove(ex.TrainingPlanExerciseId);
+            ShowToast("Đã lưu lý do bỏ lỡ bài tập!");
+        }
+        else
+        {
+            ShowToast(res.Message ?? "Không thể lưu lý do bỏ lỡ.");
         }
 
         togglingExerciseId = null;
@@ -587,5 +892,107 @@
             return $"https://www.youtube.com/embed/{id}";
         }
         return url;
+    }
+
+    private bool showProofModal = false;
+    private TraineeWorkoutExerciseDto? submittingExercise;
+    private string? proofMediaUrl;
+    private string? proofNotes;
+    private bool isUploadingProof = false;
+    private bool isSubmittingProof = false;
+
+    private void OpenSubmitProofModal(TraineeWorkoutExerciseDto ex)
+    {
+        submittingExercise = ex;
+        proofMediaUrl = ex.MediaUrl;
+        proofNotes = GetExerciseNote(ex.TrainingPlanExerciseId) ?? ex.TraineeNotes;
+        showProofModal = true;
+    }
+
+    private void CloseSubmitProofModal()
+    {
+        if (isSubmittingProof || isUploadingProof) return;
+        showProofModal = false;
+        submittingExercise = null;
+        proofMediaUrl = null;
+        proofNotes = null;
+    }
+
+    private async Task HandleProofFileUpload(Microsoft.AspNetCore.Components.Forms.InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file == null) return;
+
+        isUploadingProof = true;
+        try
+        {
+            var res = await FileUploadService.UploadAsync(file);
+            if (res.Success && !string.IsNullOrWhiteSpace(res.Data))
+            {
+                proofMediaUrl = res.Data;
+                ShowToast("Đã tải lên minh chứng thành công!");
+            }
+            else
+            {
+                ShowToast(res.Message ?? "Tải file lên thất bại.");
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowToast($"Lỗi upload: {ex.Message}");
+        }
+        finally
+        {
+            isUploadingProof = false;
+        }
+    }
+
+    private async Task SubmitProofAsync()
+    {
+        if (submittingExercise == null || isSubmittingProof) return;
+
+        if (string.IsNullOrWhiteSpace(proofMediaUrl) && string.IsNullOrWhiteSpace(proofNotes))
+        {
+            ShowToast("Vui lòng đính kèm ảnh/video minh chứng hoặc ghi chú tập luyện.");
+            return;
+        }
+
+        isSubmittingProof = true;
+        try
+        {
+            var dto = new RequestWorkoutCompletionDto
+            {
+                TrainingPlanExerciseId = submittingExercise.TrainingPlanExerciseId,
+                LogDate = submittingExercise.ScheduledDate ?? CurrentDay?.ScheduledDate ?? BusinessToday,
+                MediaUrl = string.IsNullOrWhiteSpace(proofMediaUrl) ? null : proofMediaUrl.Trim(),
+                Notes = string.IsNullOrWhiteSpace(proofNotes) ? null : proofNotes.Trim()
+            };
+
+            var res = await TrainingPlanService.RequestWorkoutCompletionAsync(dto);
+            if (res.Success && res.Data != null)
+            {
+                submittingExercise.IsCompleted = false;
+                submittingExercise.Status = "PENDING_REVIEW";
+                submittingExercise.MediaUrl = res.Data.MediaUrl;
+                submittingExercise.TraineeNotes = res.Data.Notes;
+                submittingExercise.WorkoutCompletionLogId = res.Data.WorkoutCompletionLogId;
+                exerciseNotes.Remove(submittingExercise.TrainingPlanExerciseId);
+
+                CloseSubmitProofModal();
+                ShowToast("🎉 Đã gửi yêu cầu hoàn thành bài tập! Vui lòng chờ HLV duyệt.");
+            }
+            else
+            {
+                ShowToast(res.Message ?? "Không thể gửi yêu cầu hoàn thành bài tập.");
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowToast($"Lỗi: {ex.Message}");
+        }
+        finally
+        {
+            isSubmittingProof = false;
+        }
     }
 }

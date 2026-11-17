@@ -67,13 +67,34 @@ public class TrainingPackageService : ITrainingPackageService
         return await _apiClient.GetAsync<IEnumerable<TrainingPackageResponseDto>>($"{BaseEndpoint}{query}");
     }
 
-    public async Task<ApiResponse<PagedResult<TrainingPackageResponseDto>>> GetPurchasedPackagesAsync(int pageNumber = 1, int pageSize = 10)
+    public async Task<ApiResponse<PagedResult<TrainingPackageResponseDto>>> GetPurchasedPackagesAsync(
+        int pageNumber = 1,
+        int pageSize = 10,
+        string? searchKeyword = null,
+        string? packageType = null,
+        string? status = null,
+        string? sortBy = null)
     {
         if (pageNumber < 1) pageNumber = 1;
         if (pageSize < 1) pageSize = 10;
 
+        var queryParams = new List<string>
+        {
+            $"pageNumber={pageNumber}",
+            $"pageSize={pageSize}"
+        };
+
+        if (!string.IsNullOrWhiteSpace(searchKeyword))
+            queryParams.Add($"searchKeyword={Uri.EscapeDataString(searchKeyword.Trim())}");
+        if (!string.IsNullOrWhiteSpace(packageType) && !string.Equals(packageType, "ALL", StringComparison.OrdinalIgnoreCase))
+            queryParams.Add($"packageType={Uri.EscapeDataString(packageType.Trim())}");
+        if (!string.IsNullOrWhiteSpace(status) && !string.Equals(status, "ALL", StringComparison.OrdinalIgnoreCase))
+            queryParams.Add($"status={Uri.EscapeDataString(status.Trim())}");
+        if (!string.IsNullOrWhiteSpace(sortBy))
+            queryParams.Add($"sortBy={Uri.EscapeDataString(sortBy.Trim())}");
+
         return await _apiClient.GetAsync<PagedResult<TrainingPackageResponseDto>>(
-            $"{BaseEndpoint}/purchased?pageNumber={pageNumber}&pageSize={pageSize}");
+            $"{BaseEndpoint}/purchased?{string.Join("&", queryParams)}");
     }
 
     public async Task<ApiResponse<List<string>>> UploadPackageImagesAsync(IEnumerable<IBrowserFile> files)

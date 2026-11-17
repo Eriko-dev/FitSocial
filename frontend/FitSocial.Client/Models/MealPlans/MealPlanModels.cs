@@ -34,6 +34,7 @@ public class TraineeMealPlanModel
     public Guid OrderDetailsId { get; set; }
     public string PackageTitle { get; set; } = string.Empty;
     public string? PackageThumbnailUrl { get; set; }
+    public string PackageType { get; set; } = "BOTH";
     public Guid CoachId { get; set; }
     public string CoachName { get; set; } = string.Empty;
     public string? Title { get; set; }
@@ -41,6 +42,9 @@ public class TraineeMealPlanModel
     public string? Status { get; set; }
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
+    public int? RemainingDays => EndDate.HasValue
+        ? Math.Max(0, (int)Math.Ceiling((EndDate.Value.Date - DateTime.UtcNow.Date).TotalDays))
+        : null;
     public List<MealPlanWeekModel> Weeks { get; set; } = new();
     public int TotalItems => Weeks.SelectMany(w => w.Days).SelectMany(d => d.Items).Count();
 }

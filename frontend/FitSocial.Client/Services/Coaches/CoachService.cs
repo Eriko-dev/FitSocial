@@ -61,6 +61,11 @@ public class CoachService : ICoachService
         return await _apiClient.PostAsync<CreateCoachBankAccountDto, CoachBankAccountDto>($"{BaseEndpoint}/bank-accounts", dto);
     }
 
+    public async Task<ApiResponse<CoachBankAccountDto>> UpdateBankAccountAsync(Guid bankId, CreateCoachBankAccountDto dto)
+    {
+        return await _apiClient.PutAsync<CreateCoachBankAccountDto, CoachBankAccountDto>($"{BaseEndpoint}/bank-accounts/{bankId}", dto);
+    }
+
     public async Task<ApiResponse<bool>> SetDefaultBankAccountAsync(Guid bankId)
     {
         return await _apiClient.PutAsync<object, bool>($"{BaseEndpoint}/bank-accounts/{bankId}/default", new { });
@@ -69,6 +74,11 @@ public class CoachService : ICoachService
     public async Task<ApiResponse<bool>> DeleteBankAccountAsync(Guid bankId)
     {
         return await _apiClient.DeleteAsync<bool>($"{BaseEndpoint}/bank-accounts/{bankId}");
+    }
+
+    public async Task<ApiResponse<string?>> LookupBankAccountAsync(string bin, string accountNumber)
+    {
+        return await _apiClient.GetAsync<string?>($"{BaseEndpoint}/bank-accounts/lookup?bin={Uri.EscapeDataString(bin)}&accountNumber={Uri.EscapeDataString(accountNumber)}");
     }
 
     public async Task<ApiResponse<CoachApplicationListResponseDto>> GetCoachApplicationsAsync(

@@ -61,6 +61,9 @@ public class ReportListItemDto
     // Attached Evidence Media
     public List<ReportMediaItemDto> Media { get; set; } = new();
 
+    // Attached Appeal Evidence Media
+    public List<ReportMediaItemDto> AppealMedia { get; set; } = new();
+
     // Timestamp
     public DateTime? CreatedAt { get; set; }
 }

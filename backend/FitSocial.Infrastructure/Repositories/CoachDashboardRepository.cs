@@ -125,11 +125,20 @@ public class CoachDashboardRepository : ICoachDashboardRepository
 
     public async Task<(decimal TotalRevenue, int TotalOrders, double RetentionRate)> GetAnalyticsSummaryAsync(Guid coachId, CancellationToken cancellationToken = default)
     {
-        var paidStatuses = new[] { Domain.Constants.PaymentConstants.OrderStatusPaid, Domain.Constants.PaymentConstants.OrderStatusActive, Domain.Constants.PaymentConstants.OrderStatusCompleted };
+        var paidStatuses = new[] 
+        { 
+            Domain.Constants.PaymentConstants.OrderStatusPaid, 
+            Domain.Constants.PaymentConstants.OrderStatusActive, 
+            Domain.Constants.PaymentConstants.OrderStatusCompleted 
+        };
 
         var baseQuery = _context.Orders
             .AsNoTracking()
-            .Where(o => o.CoachId == coachId && o.OrderStatus != null && paidStatuses.Contains(o.OrderStatus.ToUpper()));
+            .Where(o => (o.CoachId == coachId || o.OrderDetails.Any(od => od.Package != null && od.Package.CoachId == coachId))
+                        && o.OrderStatus != null 
+                        && paidStatuses.Contains(o.OrderStatus.ToUpper())
+                        && o.OrderStatus.ToUpper() != Domain.Constants.PaymentConstants.OrderStatusRefunded
+                        && (o.RefundRequests == null || !o.RefundRequests.Any(r => r.Status != null && r.Status.ToUpper() == "APPROVED")));
 
         // 1. Tổng doanh thu & Số đơn
         var summary = await baseQuery
@@ -153,7 +162,7 @@ public class CoachDashboardRepository : ICoachDashboardRepository
         var totalTrainees = traineeOrderCounts.Count;
         var retainedTrainees = traineeOrderCounts.Count(c => c >= 2);
         var retentionRate = totalTrainees > 0
-            ? Math.Round((double)retainedTrainees / totalTrainees * 100, 2)
+            ? Math.Round((double)retainedTrainees / totalTrainees * 100, 1)
             : 0;
 
         return (totalRevenue, totalOrders, retentionRate);
@@ -161,36 +170,63 @@ public class CoachDashboardRepository : ICoachDashboardRepository
 
     public async Task<List<(int Year, int Month, decimal Revenue, int TotalOrders)>> GetMonthlyStatsAsync(Guid coachId, DateTime startDate, CancellationToken cancellationToken = default)
     {
-        var paidStatuses = new[] { Domain.Constants.PaymentConstants.OrderStatusPaid, Domain.Constants.PaymentConstants.OrderStatusActive, Domain.Constants.PaymentConstants.OrderStatusCompleted };
+        var paidStatuses = new[] 
+        { 
+            Domain.Constants.PaymentConstants.OrderStatusPaid, 
+            Domain.Constants.PaymentConstants.OrderStatusActive, 
+            Domain.Constants.PaymentConstants.OrderStatusCompleted 
+        };
 
-        var stats = await _context.Orders
+        var orders = await _context.Orders
             .AsNoTracking()
-            .Where(o => o.CoachId == coachId
+            .Where(o => (o.CoachId == coachId || o.OrderDetails.Any(od => od.Package != null && od.Package.CoachId == coachId))
                         && o.OrderStatus != null
                         && paidStatuses.Contains(o.OrderStatus.ToUpper())
+                        && o.OrderStatus.ToUpper() != Domain.Constants.PaymentConstants.OrderStatusRefunded
+                        && (o.RefundRequests == null || !o.RefundRequests.Any(r => r.Status != null && r.Status.ToUpper() == "APPROVED"))
+                        && o.CreatedAt != null
                         && o.CreatedAt >= startDate)
-            .GroupBy(o => new { o.CreatedAt!.Value.Year, o.CreatedAt.Value.Month })
-            .Select(g => new
+            .Select(o => new
             {
-                Year = g.Key.Year,
-                Month = g.Key.Month,
-                Revenue = g.Sum(o => o.TotalAmount ?? 0),
-                TotalOrders = g.Count()
+                CreatedAt = o.CreatedAt!.Value,
+                TotalAmount = o.TotalAmount ?? 0
             })
             .ToListAsync(cancellationToken);
 
-        return stats.Select(s => (s.Year, s.Month, s.Revenue, s.TotalOrders)).ToList();
+        // Phân chia tháng theo múi giờ Việt Nam (UTC+7)
+        var stats = orders
+            .GroupBy(o =>
+            {
+                var vnTime = o.CreatedAt.AddHours(7);
+                return new { vnTime.Year, vnTime.Month };
+            })
+            .Select(g => (
+                Year: g.Key.Year,
+                Month: g.Key.Month,
+                Revenue: g.Sum(o => o.TotalAmount),
+                TotalOrders: g.Count()
+            ))
+            .ToList();
+
+        return stats;
     }
 
     public async Task<List<(Guid TraineeId, string TraineeName, decimal TotalSpent, int TotalOrders)>> GetTopTraineesAsync(Guid coachId, int limit, CancellationToken cancellationToken = default)
     {
-        var paidStatuses = new[] { Domain.Constants.PaymentConstants.OrderStatusPaid, Domain.Constants.PaymentConstants.OrderStatusActive, Domain.Constants.PaymentConstants.OrderStatusCompleted };
+        var paidStatuses = new[] 
+        { 
+            Domain.Constants.PaymentConstants.OrderStatusPaid, 
+            Domain.Constants.PaymentConstants.OrderStatusActive, 
+            Domain.Constants.PaymentConstants.OrderStatusCompleted 
+        };
 
         var topTrainees = await _context.Orders
             .AsNoTracking()
-            .Where(o => o.CoachId == coachId
+            .Where(o => (o.CoachId == coachId || o.OrderDetails.Any(od => od.Package != null && od.Package.CoachId == coachId))
                         && o.OrderStatus != null
-                        && paidStatuses.Contains(o.OrderStatus.ToUpper()))
+                        && paidStatuses.Contains(o.OrderStatus.ToUpper())
+                        && o.OrderStatus.ToUpper() != Domain.Constants.PaymentConstants.OrderStatusRefunded
+                        && (o.RefundRequests == null || !o.RefundRequests.Any(r => r.Status != null && r.Status.ToUpper() == "APPROVED")))
             .GroupBy(o => new { o.BuyerId, o.Buyer.FullName }) // Entity Framework Core join bảng User tự động
             .Select(g => new
             {

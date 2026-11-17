@@ -161,77 +161,228 @@ namespace FitSocial.Application.Services
             return true;
         }
 
-        public async Task<PagedResultDto<TrainingPackageResponseDto>> GetPurchasedPackagesAsync(Guid currentUserId, int pageNumber = 1, int pageSize = 10)
+        public async Task<PagedResultDto<TrainingPackageResponseDto>> GetPurchasedPackagesAsync(
+            Guid currentUserId,
+            int pageNumber = 1,
+            int pageSize = 10,
+            string? searchKeyword = null,
+            string? packageType = null,
+            string? status = null,
+            string? sortBy = null,
+            CancellationToken cancellationToken = default)
         {
             if (pageNumber < 1) pageNumber = 1;
             if (pageSize < 1) pageSize = 10;
             if (pageSize > 50) pageSize = 50;
 
-            var (orderDetails, totalCount) = await _repository.GetPurchasedOrderDetailsAsync(currentUserId, pageNumber, pageSize);
+            bool hasFilters = !string.IsNullOrWhiteSpace(searchKeyword)
+                           || !string.IsNullOrWhiteSpace(packageType)
+                           || !string.IsNullOrWhiteSpace(status)
+                           || !string.IsNullOrWhiteSpace(sortBy);
 
-            var dtos = orderDetails.Select(od =>
-            {
-                var pkg = od.Package!;
-                var dto = MapToDto(pkg);
+            var (orderDetails, totalCount) = hasFilters
+                ? await _repository.GetPurchasedOrderDetailsAsync(
+                    currentUserId,
+                    pageNumber,
+                    pageSize,
+                    searchKeyword,
+                    packageType,
+                    status,
+                    sortBy,
+                    cancellationToken)
+                : await _repository.GetPurchasedOrderDetailsAsync(
+                    currentUserId,
+                    pageNumber,
+                    pageSize,
+                    cancellationToken);
 
-                dto.OrderDetailsId = od.OrderDetailsId;
-                dto.OrderId = od.OrderId;
-                dto.OrderCreatedAt = od.Order?.CreatedAt;
-                dto.OrderStatus = od.Order?.OrderStatus;
+            var nowUtc = DateTime.UtcNow;
 
-                var latestRefund = od.Order?.RefundRequests?
-                    .OrderByDescending(r => r.RequestedAt ?? r.CreatedAt)
-                    .FirstOrDefault();
-                if (latestRefund != null)
+            var dtos = (orderDetails ?? new List<OrderDetail>())
+                .Where(od => od.Package != null)
+                .Select(od =>
                 {
-                    dto.RefundStatus = latestRefund.Status;
-                }
-                else if (string.Equals(od.Order?.OrderStatus, "REFUND_PENDING", StringComparison.OrdinalIgnoreCase))
-                {
-                    dto.RefundStatus = "PENDING";
-                }
-                else if (string.Equals(od.Order?.OrderStatus, "REFUNDED", StringComparison.OrdinalIgnoreCase))
-                {
-                    dto.RefundStatus = "APPROVED";
-                }
+                    var pkg = od.Package!;
+                    var dto = MapToDto(pkg);
 
-                dto.PackageType = od.PackageType ?? pkg.PackageType ?? "BOTH";
+                    // Ưu tiên dữ liệu Snapshot lúc mua từ OrderDetail
+                    dto.Title = !string.IsNullOrWhiteSpace(od.PackageTitle) ? od.PackageTitle : dto.Title;
+                    dto.Price = od.PackagePrice ?? dto.Price;
+                    dto.DurationDays = od.PackageDurationDays ?? dto.DurationDays;
+                    dto.CoachName = !string.IsNullOrWhiteSpace(od.CoachName) ? od.CoachName : dto.CoachName;
+                    dto.PackageType = od.PackageType ?? pkg.PackageType ?? "BOTH";
 
-                var plan = od.TrainingPlans?.OrderByDescending(p => p.CreatedAt).FirstOrDefault();
-                if (plan != null)
-                {
-                    dto.TrainingPlanId = plan.TrainingPlanId;
-                    dto.PlanStatus = plan.Status;
-                }
+                    dto.OrderDetailsId = od.OrderDetailsId;
+                    dto.OrderId = od.OrderId;
+                    dto.OrderCreatedAt = od.Order?.CreatedAt ?? od.CreatedAt;
+                    dto.OrderStatus = od.Order?.OrderStatus;
 
-                var mealPlan = od.MealPlans?.OrderByDescending(p => p.CreatedAt).FirstOrDefault();
-                if (mealPlan != null)
-                {
-                    dto.MealPlanId = mealPlan.MealPlanId;
-                    dto.MealPlanStatus = mealPlan.Status;
-                }
+                    var latestRefund = od.Order?.RefundRequests?
+                        .OrderByDescending(r => r.RequestedAt ?? r.CreatedAt)
+                        .FirstOrDefault();
+                    if (latestRefund != null)
+                    {
+                        dto.RefundStatus = latestRefund.Status;
+                        if (string.Equals(latestRefund.Status, "REJECTED", StringComparison.OrdinalIgnoreCase)
+                            && !string.IsNullOrWhiteSpace(latestRefund.StaffNote)
+                            && !latestRefund.StaffNote.TrimStart().StartsWith("[Policy:", StringComparison.OrdinalIgnoreCase))
+                        {
+                            dto.RefundStaffNote = latestRefund.StaffNote.Trim();
+                        }
+                    }
+                    else if (string.Equals(od.Order?.OrderStatus, "REFUND_PENDING", StringComparison.OrdinalIgnoreCase))
+                    {
+                        dto.RefundStatus = "PENDING";
+                    }
+                    else if (string.Equals(od.Order?.OrderStatus, "REFUNDED", StringComparison.OrdinalIgnoreCase))
+                    {
+                        dto.RefundStatus = "APPROVED";
+                    }
 
-                var userReview = pkg.Reviews?.FirstOrDefault(r => r.TraineeId == currentUserId && r.OrderId == od.OrderId);
-                if (userReview != null)
-                {
-                    dto.HasReviewed = true;
-                    dto.IsReviewEdited = userReview.IsEdited ?? false;
-                    dto.UserRating = userReview.Rating;
-                    dto.UserComment = userReview.Comment;
-                    dto.UserReviewImageUrls = userReview.ReviewMedia?
-                        .OrderBy(m => m.SortOrder)
-                        .Select(m => m.MediaUrl)
-                        .ToList() ?? new List<string>();
-                }
-                else
-                {
-                    dto.HasReviewed = false;
-                    dto.IsReviewEdited = false;
-                    dto.UserReviewImageUrls = new List<string>();
-                }
+                    var plan = od.TrainingPlans?.OrderByDescending(p => p.CreatedAt).FirstOrDefault();
+                    if (plan != null)
+                    {
+                        dto.TrainingPlanId = plan.TrainingPlanId;
+                        dto.PlanStatus = plan.Status;
+                    }
 
-                return dto;
-            }).ToList();
+                    var mealPlan = od.MealPlans?.OrderByDescending(p => p.CreatedAt).FirstOrDefault();
+                    if (mealPlan != null)
+                    {
+                        dto.MealPlanId = mealPlan.MealPlanId;
+                        dto.MealPlanStatus = mealPlan.Status;
+                    }
+
+                    // 1. Tính Ngày hết hạn (ExpiresAt / RemainingDays) và Trạng thái hiệu lực (EnrollmentStatus)
+                    var durationDays = dto.DurationDays ?? 30;
+                    if (dto.OrderCreatedAt.HasValue && durationDays > 0)
+                    {
+                        var purchaseUtc = DateTime.SpecifyKind(dto.OrderCreatedAt.Value, DateTimeKind.Utc);
+                        dto.ExpiresAt = purchaseUtc.AddDays(durationDays);
+                    }
+
+                    var isRefundApproved = string.Equals(dto.RefundStatus, "APPROVED", StringComparison.OrdinalIgnoreCase)
+                                        || string.Equals(dto.OrderStatus, "REFUNDED", StringComparison.OrdinalIgnoreCase);
+                    var isRefundPending = string.Equals(dto.RefundStatus, "PENDING", StringComparison.OrdinalIgnoreCase)
+                                       || string.Equals(dto.OrderStatus, "REFUND_PENDING", StringComparison.OrdinalIgnoreCase);
+
+                    var normalizedPkgType = (dto.PackageType ?? "BOTH").Trim().ToUpperInvariant();
+                    var planCompleted = string.Equals(dto.PlanStatus?.Trim(), "COMPLETED", StringComparison.OrdinalIgnoreCase);
+                    var mealCompleted = string.Equals(dto.MealPlanStatus?.Trim(), "COMPLETED", StringComparison.OrdinalIgnoreCase);
+                    var isProgramCompleted = (normalizedPkgType == "WORKOUT" && planCompleted)
+                                          || (normalizedPkgType == "MEAL" && mealCompleted)
+                                          || (normalizedPkgType == "BOTH" && planCompleted && (!dto.MealPlanId.HasValue || mealCompleted));
+
+                    if (isRefundApproved)
+                    {
+                        dto.EnrollmentStatus = "REFUNDED";
+                        dto.RemainingDays = 0;
+                    }
+                    else if (isRefundPending)
+                    {
+                        dto.EnrollmentStatus = "REFUND_PENDING";
+                        dto.RemainingDays = dto.ExpiresAt.HasValue
+                            ? Math.Max(0, (int)Math.Ceiling((dto.ExpiresAt.Value - nowUtc).TotalDays))
+                            : 0;
+                    }
+                    else if (isProgramCompleted)
+                    {
+                        dto.EnrollmentStatus = "COMPLETED";
+                        dto.RemainingDays = dto.ExpiresAt.HasValue
+                            ? Math.Max(0, (int)Math.Ceiling((dto.ExpiresAt.Value - nowUtc).TotalDays))
+                            : 0;
+                    }
+                    else if (dto.ExpiresAt.HasValue && nowUtc >= dto.ExpiresAt.Value)
+                    {
+                        dto.EnrollmentStatus = "EXPIRED";
+                        dto.RemainingDays = 0;
+                    }
+                    else
+                    {
+                        dto.EnrollmentStatus = "ACTIVE";
+                        dto.RemainingDays = dto.ExpiresAt.HasValue
+                            ? Math.Max(0, (int)Math.Ceiling((dto.ExpiresAt.Value - nowUtc).TotalDays))
+                            : null;
+                    }
+
+                    // Review của học viên cho đơn hàng này (hỗ trợ cả fallback review cũ chưa gán OrderId)
+                    var userReview = pkg.Reviews?.FirstOrDefault(r => r.TraineeId == currentUserId && r.OrderId == od.OrderId)
+                                  ?? pkg.Reviews?.FirstOrDefault(r => r.TraineeId == currentUserId && r.OrderId == null);
+                    if (userReview != null)
+                    {
+                        dto.HasReviewed = true;
+                        dto.IsReviewEdited = userReview.IsEdited ?? false;
+                        dto.UserRating = userReview.Rating;
+                        dto.UserComment = userReview.Comment;
+                        dto.UserReviewImageUrls = userReview.ReviewMedia?
+                            .OrderBy(m => m.SortOrder)
+                            .Select(m => m.MediaUrl)
+                            .ToList() ?? new List<string>();
+                    }
+                    else
+                    {
+                        dto.HasReviewed = false;
+                        dto.IsReviewEdited = false;
+                        dto.UserReviewImageUrls = new List<string>();
+                    }
+
+                    // 5. Kiểm tra điều kiện Đánh giá (CanReview & CannotReviewReason) theo tiến độ/trạng thái đơn hàng
+                    bool workoutReady = dto.TrainingPlanId.HasValue
+                                     && !string.IsNullOrWhiteSpace(dto.PlanStatus)
+                                     && !string.Equals(dto.PlanStatus, "PENDING_COACH", StringComparison.OrdinalIgnoreCase)
+                                     && !string.Equals(dto.PlanStatus, "DRAFT", StringComparison.OrdinalIgnoreCase);
+                    bool mealReady = dto.MealPlanId.HasValue
+                                  && !string.IsNullOrWhiteSpace(dto.MealPlanStatus)
+                                  && !string.Equals(dto.MealPlanStatus, "PENDING_COACH", StringComparison.OrdinalIgnoreCase)
+                                  && !string.Equals(dto.MealPlanStatus, "DRAFT", StringComparison.OrdinalIgnoreCase);
+
+                    if (isRefundApproved)
+                    {
+                        dto.CanReview = false;
+                        dto.CannotReviewReason = "This order has been refunded and cannot be reviewed.";
+                    }
+                    else if (isRefundPending)
+                    {
+                        dto.CanReview = false;
+                        dto.CannotReviewReason = "Cannot submit or edit a review while a refund request is pending.";
+                    }
+                    else if (dto.HasReviewed && dto.IsReviewEdited)
+                    {
+                        dto.CanReview = false;
+                        dto.CannotReviewReason = "Review edited once (Maximum 1 edit reached).";
+                    }
+                    else if (!dto.HasReviewed)
+                    {
+                        if (normalizedPkgType == "WORKOUT" && !workoutReady)
+                        {
+                            dto.CanReview = false;
+                            dto.CannotReviewReason = "You can review this package once your workout plan is active.";
+                        }
+                        else if (normalizedPkgType == "MEAL" && !mealReady)
+                        {
+                            dto.CanReview = false;
+                            dto.CannotReviewReason = "You can review this package once your meal plan is active.";
+                        }
+                        else if (normalizedPkgType != "WORKOUT" && normalizedPkgType != "MEAL" && !workoutReady && !mealReady)
+                        {
+                            dto.CanReview = false;
+                            dto.CannotReviewReason = "You can review this package once your workout or meal plan is active.";
+                        }
+                        else
+                        {
+                            dto.CanReview = true;
+                            dto.CannotReviewReason = null;
+                        }
+                    }
+                    else
+                    {
+                        dto.CanReview = true;
+                        dto.CannotReviewReason = null;
+                    }
+
+                    return dto;
+                }).ToList();
+
             return PagedResultDto<TrainingPackageResponseDto>.Create(dtos, totalCount, pageNumber, pageSize);
         }
 
@@ -313,8 +464,34 @@ namespace FitSocial.Application.Services
             var paidStatuses = new[] { Domain.Constants.PaymentConstants.OrderStatusPaid, Domain.Constants.PaymentConstants.OrderStatusActive, Domain.Constants.PaymentConstants.OrderStatusCompleted };
             if (order.OrderStatus == null || !paidStatuses.Contains(order.OrderStatus.ToUpper()))
                 throw new ValidationException("You can only review a package from a paid order.");
-            if (!order.OrderDetails.Any(od => od.PackageId == packageId))
+            if (order.RefundRequests != null && order.RefundRequests.Any(r =>
+                string.Equals(r.Status, "PENDING", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(r.Status, "APPROVED", StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new ValidationException("Cannot submit or edit a review while a refund request is pending or approved.");
+            }
+            var targetOrderDetail = order.OrderDetails.FirstOrDefault(od => od.PackageId == packageId);
+            if (targetOrderDetail == null)
                 throw new ValidationException("This order does not contain the specified package.");
+
+            // Check plan progress eligibility if plans have been initialized on the order detail
+            if ((targetOrderDetail.TrainingPlans != null && targetOrderDetail.TrainingPlans.Any()) ||
+                (targetOrderDetail.MealPlans != null && targetOrderDetail.MealPlans.Any()))
+            {
+                var hasActiveWorkout = targetOrderDetail.TrainingPlans?.Any(tp =>
+                    !string.IsNullOrWhiteSpace(tp.Status) &&
+                    !string.Equals(tp.Status, "PENDING_COACH", StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(tp.Status, "DRAFT", StringComparison.OrdinalIgnoreCase)) ?? false;
+                var hasActiveMeal = targetOrderDetail.MealPlans?.Any(mp =>
+                    !string.IsNullOrWhiteSpace(mp.Status) &&
+                    !string.Equals(mp.Status, "PENDING_COACH", StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(mp.Status, "DRAFT", StringComparison.OrdinalIgnoreCase)) ?? false;
+
+                if (!hasActiveWorkout && !hasActiveMeal)
+                {
+                    throw new ValidationException("You can only review a package after its training or meal plan has been activated.");
+                }
+            }
            
             // Validate images count (max 5 images)
             if (dto.ImageUrls != null && dto.ImageUrls.Count > 5)

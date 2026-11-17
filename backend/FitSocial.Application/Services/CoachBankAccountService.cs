@@ -57,6 +57,12 @@ public class CoachBankAccountService : ICoachBankAccountService
             throw new ValidationException("Account number is required.");
         }
 
+        var cleanAccountNumber = SanitizeAccountNumber(dto.AccountNumber);
+        if (string.IsNullOrWhiteSpace(cleanAccountNumber) || !System.Text.RegularExpressions.Regex.IsMatch(cleanAccountNumber, @"^\d{6,20}$"))
+        {
+            throw new ValidationException("Account number must contain only digits (6-20 characters).");
+        }
+
         if (_userRepository != null)
         {
             var user = await _userRepository.GetByIdAsync(coachId, cancellationToken);
@@ -76,6 +82,16 @@ public class CoachBankAccountService : ICoachBankAccountService
 
         var existingAccounts = await _bankRepository.ListByCoachIdAsync(coachId, cancellationToken);
 
+        // Chống trùng lặp số tài khoản và ngân hàng
+        var isDuplicate = existingAccounts.Any(a =>
+            string.Equals(a.BankCode, dto.BankCode.Trim(), StringComparison.OrdinalIgnoreCase) &&
+            _encryptionService.Decrypt(a.EncryptedAccountNumber) == cleanAccountNumber);
+
+        if (isDuplicate)
+        {
+            throw new ValidationException("This bank account number already exists in your account list.");
+        }
+
         // If this is the first account or marked as default, make it default
         var isDefault = dto.IsDefault || !existingAccounts.Any();
 
@@ -88,14 +104,16 @@ public class CoachBankAccountService : ICoachBankAccountService
         }
 
         var now = DateTime.UtcNow;
+        var cleanAccountName = NormalizeVietnameseAccountName(dto.AccountName);
+
         var newAccount = new CoachBankAccount
         {
             BankId = Guid.NewGuid(),
             CoachId = coachId,
             BankName = dto.BankName.Trim(),
             BankCode = dto.BankCode.Trim().ToUpperInvariant(),
-            AccountName = dto.AccountName.Trim().ToUpperInvariant(),
-            EncryptedAccountNumber = _encryptionService.Encrypt(dto.AccountNumber.Trim()),
+            AccountName = cleanAccountName,
+            EncryptedAccountNumber = _encryptionService.Encrypt(cleanAccountNumber),
             Branch = string.IsNullOrWhiteSpace(dto.Branch) ? null : dto.Branch.Trim(),
             IsDefault = isDefault,
             CreatedAt = now,
@@ -106,6 +124,92 @@ public class CoachBankAccountService : ICoachBankAccountService
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponseDto<CoachBankAccountDto>.Ok(MapToDto(newAccount), "Bank account added successfully.");
+    }
+
+    public async Task<ApiResponseDto<CoachBankAccountDto>> UpdateAccountAsync(Guid coachId, Guid bankId, UpdateCoachBankAccountDto dto, CancellationToken cancellationToken = default)
+    {
+        if (dto == null || string.IsNullOrWhiteSpace(dto.AccountNumber))
+        {
+            throw new ValidationException("Account number is required.");
+        }
+
+        var accounts = await _bankRepository.ListByCoachIdAsync(coachId, cancellationToken);
+        var targetAccount = accounts.FirstOrDefault(a => a.BankId == bankId);
+        if (targetAccount == null)
+        {
+            throw new NotFoundException("Bank account not found.");
+        }
+
+        var cleanAccountNumber = SanitizeAccountNumber(dto.AccountNumber);
+        if (string.IsNullOrWhiteSpace(cleanAccountNumber) || !System.Text.RegularExpressions.Regex.IsMatch(cleanAccountNumber, @"^\d{6,20}$"))
+        {
+            throw new ValidationException("Account number must contain only digits (6-20 characters).");
+        }
+
+        var cleanAccountName = NormalizeVietnameseAccountName(dto.AccountName);
+
+        // Kiểm tra duplicate với các account khác của cùng coach (loại trừ chính targetAccount)
+        var isDuplicate = accounts.Any(a => a.BankId != bankId &&
+            string.Equals(a.BankCode, dto.BankCode.Trim(), StringComparison.OrdinalIgnoreCase) &&
+            _encryptionService.Decrypt(a.EncryptedAccountNumber) == cleanAccountNumber);
+
+        if (isDuplicate)
+        {
+            throw new ValidationException("This bank account number already exists in your account list.");
+        }
+
+        var now = DateTime.UtcNow;
+
+        // Cập nhật thông tin
+        targetAccount.BankName = dto.BankName.Trim();
+        targetAccount.BankCode = dto.BankCode.Trim().ToUpperInvariant();
+        targetAccount.AccountName = cleanAccountName;
+        targetAccount.EncryptedAccountNumber = _encryptionService.Encrypt(cleanAccountNumber);
+        targetAccount.Branch = string.IsNullOrWhiteSpace(dto.Branch) ? null : dto.Branch.Trim();
+        targetAccount.UpdatedAt = now;
+
+        if (dto.IsDefault && targetAccount.IsDefault != true)
+        {
+            foreach (var acc in accounts.Where(a => a.BankId != bankId && a.IsDefault == true))
+            {
+                acc.IsDefault = false;
+                acc.UpdatedAt = now;
+            }
+            targetAccount.IsDefault = true;
+        }
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return ApiResponseDto<CoachBankAccountDto>.Ok(MapToDto(targetAccount), "Bank account updated successfully.");
+    }
+
+    private static string SanitizeAccountNumber(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
+        return raw.Replace(" ", "").Replace("-", "").Trim();
+    }
+
+    private static string NormalizeVietnameseAccountName(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
+        var normalized = raw.Normalize(System.Text.NormalizationForm.FormD);
+        var sb = new System.Text.StringBuilder();
+
+        foreach (var c in normalized)
+        {
+            var category = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c);
+            if (category != System.Globalization.UnicodeCategory.NonSpacingMark)
+            {
+                sb.Append(c);
+            }
+        }
+
+        return sb.ToString()
+            .Normalize(System.Text.NormalizationForm.FormC)
+            .Replace("đ", "d", StringComparison.OrdinalIgnoreCase)
+            .Replace("Đ", "D", StringComparison.OrdinalIgnoreCase)
+            .Trim()
+            .ToUpperInvariant();
     }
 
 

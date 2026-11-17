@@ -27,4 +27,9 @@ public interface IReportRepository : IRepository<Report>
     /// UC-23.1 TH1: counts unresolved reports filed against a user (coach).
     /// </summary>
     Task<int> CountUnresolvedAgainstUserAsync(Guid userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Checks if a reporter already has a pending report against a specific user.
+    /// </summary>
+    Task<bool> HasPendingReportAsync(Guid reporterId, Guid reportedUserId, CancellationToken cancellationToken = default);
 }
