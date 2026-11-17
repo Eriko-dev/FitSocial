@@ -82,7 +82,7 @@ public class CoachBankAccountService : ICoachBankAccountService
 
         var existingAccounts = await _bankRepository.ListByCoachIdAsync(coachId, cancellationToken);
 
-        // Chống trùng lặp số tài khoản và ngân hàng
+        // Prevent duplicate bank account for the same coach
         var isDuplicate = existingAccounts.Any(a =>
             string.Equals(a.BankCode, dto.BankCode.Trim(), StringComparison.OrdinalIgnoreCase) &&
             _encryptionService.Decrypt(a.EncryptedAccountNumber) == cleanAccountNumber);
@@ -148,7 +148,7 @@ public class CoachBankAccountService : ICoachBankAccountService
 
         var cleanAccountName = NormalizeVietnameseAccountName(dto.AccountName);
 
-        // Kiểm tra duplicate với các account khác của cùng coach (loại trừ chính targetAccount)
+        // Check duplicate against other accounts of the same coach (excluding targetAccount)
         var isDuplicate = accounts.Any(a => a.BankId != bankId &&
             string.Equals(a.BankCode, dto.BankCode.Trim(), StringComparison.OrdinalIgnoreCase) &&
             _encryptionService.Decrypt(a.EncryptedAccountNumber) == cleanAccountNumber);
@@ -160,7 +160,7 @@ public class CoachBankAccountService : ICoachBankAccountService
 
         var now = DateTime.UtcNow;
 
-        // Cập nhật thông tin
+        // Update account details
         targetAccount.BankName = dto.BankName.Trim();
         targetAccount.BankCode = dto.BankCode.Trim().ToUpperInvariant();
         targetAccount.AccountName = cleanAccountName;

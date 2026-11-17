@@ -67,7 +67,7 @@
                         <DataAnnotationsValidator />
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                            <!-- 1. Chọn Ngân Hàng (Searchable Combobox) -->
+                            <!-- 1. Select Bank (Searchable Combobox) -->
                             <div class="md:col-span-2 relative">
                                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                                     Bank Name <span class="text-red-500">*</span>
@@ -111,7 +111,7 @@
                                 <ValidationMessage For="@(() => accountForm.BankName)" class="text-red-500 text-xs mt-1" />
                             </div>
 
-                            <!-- 2. Mã BIN ngân hàng -->
+                            <!-- 2. Bank BIN Code -->
                             <div>
                                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                                     Bank BIN Code
@@ -124,7 +124,7 @@
                                 <ValidationMessage For="@(() => accountForm.BankCode)" class="text-red-500 text-xs mt-1" />
                             </div>
 
-                            <!-- 3. Số tài khoản -->
+                            <!-- 3. Account Number -->
                             <div>
                                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                                     Account Number <span class="text-red-500">*</span>
@@ -152,7 +152,7 @@
                                 <ValidationMessage For="@(() => accountForm.AccountNumber)" class="text-red-500 text-xs mt-1" />
                             </div>
 
-                            <!-- 4. Tên chủ tài khoản -->
+                            <!-- 4. Account Holder Name -->
                             <div>
                                 <div class="flex items-center justify-between mb-1.5">
                                     <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">
@@ -172,7 +172,7 @@
                                 <ValidationMessage For="@(() => accountForm.AccountName)" class="text-red-500 text-xs mt-1" />
                             </div>
 
-                            <!-- 5. Chi nhánh (Không bắt buộc) -->
+                            <!-- 5. Branch (Optional) -->
                             <div class="md:col-span-2">
                                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                                     Branch <span class="text-gray-400 font-normal lowercase">(optional)</span>
@@ -245,7 +245,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Topbar do AppShellLayout render: trang này chỉ dùng ô tìm kiếm, không có callback riêng.
+        // Topbar rendered by AppShellLayout: this page only uses search term, no separate callback.
         Shell.SearchTerm = headerSearchTerm ?? string.Empty;
 
         await LoadUserInfoAsync();
@@ -338,7 +338,7 @@
     {
         if (string.IsNullOrWhiteSpace(accountForm.BankCode) || string.IsNullOrWhiteSpace(accountForm.AccountNumber))
         {
-            errorMessage = "Vui lòng chọn ngân hàng và nhập số tài khoản trước khi kiểm tra.";
+            errorMessage = "Please select a bank and enter the account number before verifying.";
             return;
         }
 
@@ -354,12 +354,12 @@
         {
             accountForm.AccountName = response.Data.ToUpperInvariant();
             isAccountVerified = true;
-            successMessage = $"Xác thực thành công: {response.Data}";
+            successMessage = $"Verification successful: {response.Data}";
         }
         else
         {
             isAccountVerified = false;
-            errorMessage = response.Message ?? "Không tìm thấy thông tin tài khoản hoặc dịch vụ tra cứu bận. Bạn có thể nhập tên chủ tài khoản thủ công.";
+            errorMessage = response.Message ?? "Account information not found or lookup service is busy. You can enter the account holder name manually.";
         }
 
         isLookingUp = false;
@@ -371,7 +371,7 @@
         errorMessage = "";
         successMessage = "";
 
-        // Chuẩn hóa loại bỏ khoảng trắng và viết hoa
+        // Normalize whitespace and convert to uppercase
         if (!string.IsNullOrWhiteSpace(accountForm.AccountNumber))
         {
             accountForm.AccountNumber = accountForm.AccountNumber.Replace(" ", "").Replace("-", "").Trim();
@@ -386,18 +386,18 @@
 
         if (hasExistingAccount && existingBankId.HasValue)
         {
-            // CẬP NHẬT TÀI KHOẢN HIỆN CÓ THAY VÌ TẠO BẢN GHI MỚI
+            // UPDATE EXISTING ACCOUNT INSTEAD OF CREATING NEW
             response = await CoachService.UpdateBankAccountAsync(existingBankId.Value, accountForm);
         }
         else
         {
-            // TẠO TÀI KHOẢN MỚI NẾU CHƯA CÓ
+            // CREATE NEW ACCOUNT IF NOT EXISTS
             response = await CoachService.AddBankAccountAsync(accountForm);
         }
 
         if (response.Success)
         {
-            successMessage = hasExistingAccount ? "Cập nhật tài khoản ngân hàng thành công!" : "Thêm tài khoản ngân hàng thành công!";
+            successMessage = hasExistingAccount ? "Bank account updated successfully!" : "Bank account added successfully!";
             hasExistingAccount = true;
             if (response.Data != null)
             {
@@ -406,7 +406,7 @@
         }
         else
         {
-            errorMessage = response.Message ?? "Không thể lưu thông tin tài khoản ngân hàng.";
+            errorMessage = response.Message ?? "Failed to save bank account details.";
         }
 
         isSubmitting = false;
