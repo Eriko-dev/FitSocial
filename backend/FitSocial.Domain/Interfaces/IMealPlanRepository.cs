@@ -12,4 +12,5 @@ public interface IMealPlanRepository
     Task<OrderDetail?> GetOrderDetailWithOrderAndPackageAsync(Guid orderDetailsId, CancellationToken ct = default);
     Task AddAsync(MealPlan mealPlan, CancellationToken ct = default);
     void RemoveItems(IEnumerable<MealPlanItem> items);
+    Task AddItemAsync(MealPlanItem item, CancellationToken ct = default);
 }
