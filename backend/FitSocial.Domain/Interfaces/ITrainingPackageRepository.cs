@@ -11,6 +11,15 @@ namespace FitSocial.Domain.Interfaces
         Task<IEnumerable<TrainingPackage>> GetAllActivePackagesAsync(string? searchKeyword = null, decimal? maxPrice = null, Guid? coachId = null, CancellationToken cancellationToken = default);
         Task<List<TrainingPackage>> GetPurchasedPackagesAsync(Guid traineeId, CancellationToken cancellationToken = default);
         Task<(List<OrderDetail> Items, int TotalCount)> GetPurchasedOrderDetailsAsync(Guid traineeId, int pageNumber, int pageSize, CancellationToken cancellationToken = default);
+        Task<(List<OrderDetail> Items, int TotalCount)> GetPurchasedOrderDetailsAsync(
+            Guid traineeId,
+            int pageNumber,
+            int pageSize,
+            string? searchKeyword,
+            string? packageType = null,
+            string? status = null,
+            string? sortBy = null,
+            CancellationToken cancellationToken = default);
 
     }
 }

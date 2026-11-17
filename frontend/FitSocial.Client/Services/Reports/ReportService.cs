@@ -154,12 +154,9 @@ public class ReportService : IReportService
         {
             var query = new List<string>();
 
-            // "ALL" means no appeal-status filter.
-            if (!string.IsNullOrWhiteSpace(appealStatus) &&
-                !string.Equals(appealStatus.Trim(), "ALL", StringComparison.OrdinalIgnoreCase))
-            {
-                query.Add($"appealStatus={Uri.EscapeDataString(appealStatus.Trim().ToUpperInvariant())}");
-            }
+            // Luôn truyền appealStatus (nếu rỗng hoặc ALL thì truyền ALL để Backend chỉ lọc các bản ghi có kháng cáo)
+            var effectiveStatus = string.IsNullOrWhiteSpace(appealStatus) ? "ALL" : appealStatus.Trim().ToUpperInvariant();
+            query.Add($"appealStatus={Uri.EscapeDataString(effectiveStatus)}");
 
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {

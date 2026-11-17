@@ -59,7 +59,15 @@ public class ReportRepository : Repository<Report>, IReportRepository
         if (!string.IsNullOrWhiteSpace(appealStatus))
         {
             var ast = appealStatus.Trim().ToUpper();
-            query = query.Where(r => r.AppealStatus != null && r.AppealStatus.ToUpper() == ast);
+            if (ast == "ALL")
+            {
+                // Khi lọc ALL ở màn hình Appeals, chỉ lấy các báo cáo CÓ KHÁNG CÁO
+                query = query.Where(r => r.AppealStatus != null && r.AppealStatus != "");
+            }
+            else
+            {
+                query = query.Where(r => r.AppealStatus != null && r.AppealStatus.ToUpper() == ast);
+            }
         }
 
         if (reporterId.HasValue && reporterId.Value != Guid.Empty)
@@ -103,6 +111,8 @@ public class ReportRepository : Repository<Report>, IReportRepository
             .Include(r => r.ResolvedByNavigation)
             .Include(r => r.AppealReviewedByNavigation)
             .Include(r => r.ReportMedia)
+            .Include(r => r.Appeals)
+                .ThenInclude(a => a.AppealMedia)
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
 
@@ -120,6 +130,7 @@ public class ReportRepository : Repository<Report>, IReportRepository
             .Include(r => r.AppealReviewedByNavigation)
             .Include(r => r.ReportMedia)
             .Include(r => r.Appeals)
+                .ThenInclude(a => a.AppealMedia)
             .AsSplitQuery()
             .FirstOrDefaultAsync(r => r.ReportId == reportId, cancellationToken);
     }
@@ -130,6 +141,17 @@ public class ReportRepository : Repository<Report>, IReportRepository
             r.ReportedUserId == userId
             && r.Status != null
             && (r.Status.ToUpper() == "PENDING" || r.Status.ToUpper() == "REVIEWED"),
+            cancellationToken);
+    }
+
+    public Task<bool> HasPendingReportAsync(Guid reporterId, Guid reportedUserId, CancellationToken cancellationToken = default)
+    {
+        return DbSet.AnyAsync(r =>
+            r.ReporterId == reporterId
+            && r.ReportedUserId == reportedUserId
+            && r.ReportedPostId == null
+            && r.Status != null
+            && r.Status.ToUpper() == "PENDING",
             cancellationToken);
     }
 }

@@ -150,6 +150,10 @@ public class TrainingPlanRepository : Repository<TrainingPlan>, ITrainingPlanRep
             .Include(e => e.TrainingPlan)
                 .ThenInclude(p => p.OrderDetails)
                     .ThenInclude(od => od!.Order)
+                        .ThenInclude(o => o!.Buyer)
+            .Include(e => e.TrainingPlan)
+                .ThenInclude(p => p.OrderDetails)
+                    .ThenInclude(od => od!.Package)
             .FirstOrDefaultAsync(e => e.TrainingPlanExerciseId == exerciseId, cancellationToken);
     }
 
@@ -182,6 +186,10 @@ public class TrainingPlanRepository : Repository<TrainingPlan>, ITrainingPlanRep
             .Include(p => p.TrainingPlanExercises)
                 .ThenInclude(e => e.WorkoutCompletionLogs)
             .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.OrderDetailsId == orderDetailsId && (p.CoachId == coachId || (p.OrderDetails != null && p.OrderDetails.Order.CoachId == coachId)), cancellationToken);
+            .FirstOrDefaultAsync(p => p.OrderDetailsId == orderDetailsId &&
+                (p.CoachId == coachId
+                 || (p.OrderDetails != null && p.OrderDetails.Order != null && p.OrderDetails.Order.CoachId == coachId)
+                 || (p.OrderDetails != null && p.OrderDetails.Package != null && p.OrderDetails.Package.CoachId == coachId)),
+                cancellationToken);
     }
 }

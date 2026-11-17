@@ -116,6 +116,37 @@ public class TraineeWorkoutController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Request Training Completion: Trainee submits proof photo/video and notes for Coach to review.
+    /// </summary>
+    [HttpPost("request-completion")]
+    [ProducesResponseType(typeof(ApiResponseDto<WorkoutCompletionResultDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponseDto<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponseDto<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponseDto<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponseDto<object>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RequestWorkoutCompletion(
+        [FromBody] RequestWorkoutCompletionDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        var traineeId = GetCurrentUserId();
+        if (traineeId == Guid.Empty)
+        {
+            return Unauthorized(ApiResponseDto<WorkoutCompletionResultDto>.Fail("Unauthorized: Invalid user identity."));
+        }
+
+        try
+        {
+            var result = await _trainingPlanService.RequestWorkoutCompletionAsync(traineeId, dto, cancellationToken);
+            return Ok(ApiResponseDto<WorkoutCompletionResultDto>.Ok(result, "Workout completion request submitted successfully. Waiting for coach review."));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[TraineeWorkout] Error requesting completion for exercise {ExerciseId}: {Message}", dto?.TrainingPlanExerciseId, ex.Message);
+            throw;
+        }
+    }
+
     private Guid GetCurrentUserId()
     {
         var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value

@@ -1,4 +1,4 @@
-﻿using FitSocial.Domain.Entities;
+using FitSocial.Domain.Entities;
 using FitSocial.Domain.Interfaces;
 using FitSocial.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -27,9 +27,7 @@ namespace FitSocial.Infrastructure.Repositories
             if (pageSize < 1) pageSize = 10;
             if (pageSize > 100) pageSize = 100;
 
-            var isCoach = string.Equals(userRole, "COACH", StringComparison.OrdinalIgnoreCase)
-                       || string.Equals(userRole, "Coach", StringComparison.OrdinalIgnoreCase)
-                       || string.Equals(userRole, "coach", StringComparison.OrdinalIgnoreCase);
+            var isCoach = string.Equals(userRole, "COACH", StringComparison.OrdinalIgnoreCase);
 
             var records = new List<TransactionRecord>();
 
@@ -43,56 +41,84 @@ namespace FitSocial.Infrastructure.Repositories
                 "ACTIVE"
             };
 
+            // Chuẩn hóa mốc thời gian lọc theo múi giờ Việt Nam (UTC+7) sang UTC
+            DateTime? startUtc = fromDate.HasValue ? fromDate.Value.Date.AddHours(-7) : null;
+            DateTime? endUtc = toDate.HasValue ? toDate.Value.Date.AddDays(1).AddTicks(-1).AddHours(-7) : null;
+
             // ================================================================
-            // 1. GIAO DỊCH MUA/BÁN GÓI TẬP (PACKAGE) - user với user
+            // 1. GIAO DỊCH ĐƠN HÀNG (PACKAGE + COACH_ACTIVATION)
             // ================================================================
             var orderQuery = _dbContext.Set<Order>()
+                .AsNoTracking()
                 .Include(o => o.Payments)
                 .Include(o => o.OrderDetails)
-                .Where(o => o.OrderType == FitSocial.Domain.Constants.PaymentConstants.OrderTypePackage);
+                    .ThenInclude(od => od.Package)
+                .Where(o => o.OrderStatus != null && paidStatuses.Contains(o.OrderStatus.ToUpper()));
 
             if (isCoach)
             {
-                orderQuery = orderQuery.Where(o => o.CoachId.HasValue && o.CoachId.Value == userId);
+                // Coach: Xem các đơn học viên mua gói của mình HOẶC đơn do chính mình mua/gia hạn
+                orderQuery = orderQuery.Where(o =>
+                    o.CoachId == userId ||
+                    o.OrderDetails.Any(od => od.Package != null && od.Package.CoachId == userId) ||
+                    o.BuyerId == userId);
             }
             else
             {
+                // Trainee: Xem các đơn mình đã mua
                 orderQuery = orderQuery.Where(o => o.BuyerId == userId);
             }
 
-            orderQuery = orderQuery.Where(o => o.OrderStatus != null && paidStatuses.Contains(o.OrderStatus.ToUpper()));
+            if (startUtc.HasValue)
+                orderQuery = orderQuery.Where(o => o.CreatedAt.HasValue && o.CreatedAt.Value >= startUtc.Value);
+            if (endUtc.HasValue)
+                orderQuery = orderQuery.Where(o => o.CreatedAt.HasValue && o.CreatedAt.Value <= endUtc.Value);
 
-            if (fromDate.HasValue)
-                orderQuery = orderQuery.Where(o => o.CreatedAt.HasValue && o.CreatedAt.Value >= fromDate.Value);
-            if (toDate.HasValue)
-                orderQuery = orderQuery.Where(o => o.CreatedAt.HasValue && o.CreatedAt.Value <= toDate.Value);
-
-            foreach (var order in await orderQuery.ToListAsync(cancellationToken))
+            var orders = await orderQuery.ToListAsync(cancellationToken);
+            foreach (var order in orders)
             {
-                var payment = order.Payments?.FirstOrDefault(p => p.Status == "SUCCESS");
+                var payment = order.Payments?.FirstOrDefault(p => p.Status == "SUCCESS")
+                           ?? order.Payments?.FirstOrDefault();
                 var packageTitle = order.OrderDetails?.FirstOrDefault()?.PackageTitle ?? "Training Package";
+                var isCoachSelling = isCoach && order.BuyerId != userId && (order.CoachId == userId || (order.OrderDetails != null && order.OrderDetails.Any(od => od.Package != null && od.Package.CoachId == userId)));
 
-                records.Add(new TransactionRecord
+                if (order.OrderType == FitSocial.Domain.Constants.PaymentConstants.OrderTypeCoachActivation)
                 {
-                    TransactionId = payment?.PaymentId ?? order.OrderId,
-                    Date = order.CreatedAt ?? DateTime.UtcNow,
-                    Amount = isCoach ? (order.TotalAmount ?? 0) : -(order.TotalAmount ?? 0),
-                    Currency = "VND",
-                    Type = "PACKAGE_PURCHASE",
-                    Status = order.OrderStatus ?? "COMPLETED",
-                    Description = isCoach
-                        ? $"Package sold: {packageTitle}"
-                        : $"Package purchased: {packageTitle}",
-                    ReferenceId = payment?.GatewayTransactionId ?? order.OrderId.ToString()
-                });
+                    records.Add(new TransactionRecord
+                    {
+                        TransactionId = payment?.PaymentId ?? order.OrderId,
+                        Date = order.CreatedAt ?? DateTime.UtcNow,
+                        Amount = -(order.TotalAmount ?? 0),
+                        Currency = "VND",
+                        Type = "COACH_ACTIVATION",
+                        Status = order.OrderStatus ?? "COMPLETED",
+                        Description = "Coach subscription activation / renewal",
+                        ReferenceId = payment?.GatewayTransactionId ?? order.OrderId.ToString()
+                    });
+                }
+                else
+                {
+                    records.Add(new TransactionRecord
+                    {
+                        TransactionId = payment?.PaymentId ?? order.OrderId,
+                        Date = order.CreatedAt ?? DateTime.UtcNow,
+                        Amount = isCoachSelling ? (order.TotalAmount ?? 0) : -(order.TotalAmount ?? 0),
+                        Currency = "VND",
+                        Type = "PACKAGE_PURCHASE",
+                        Status = order.OrderStatus ?? "COMPLETED",
+                        Description = isCoachSelling
+                            ? $"Package sold: {packageTitle}"
+                            : $"Package purchased: {packageTitle}",
+                        ReferenceId = payment?.GatewayTransactionId ?? order.OrderId.ToString()
+                    });
+                }
             }
 
             // ================================================================
-            // 2. HOÀN TRẢ TIỀN (REFUND) - user với user
-            //    Trainee (RequestedBy): nhận tiền lại (dương)
-            //    Coach (Order.CoachId): mất tiền (âm)
+            // 2. HOÀN TRẢ TIỀN (REFUND)
             // ================================================================
             var refundQuery = _dbContext.Set<RefundRequest>()
+                .AsNoTracking()
                 .Include(r => r.Order)
                     .ThenInclude(od => od.OrderDetails)
                 .Include(r => r.Payment)
@@ -100,31 +126,34 @@ namespace FitSocial.Infrastructure.Repositories
 
             if (isCoach)
             {
-                // Coach xem refund của đơn mình bán (mất tiền)
-                refundQuery = refundQuery.Where(r => r.Order.CoachId.HasValue && r.Order.CoachId.Value == userId);
+                refundQuery = refundQuery.Where(r => r.Order != null && 
+                    (r.Order.CoachId == userId || r.Order.OrderDetails.Any(od => od.Package != null && od.Package.CoachId == userId)));
             }
             else
             {
-                // Trainee xem refund của đơn mình mua (nhận tiền)
                 refundQuery = refundQuery.Where(r => r.RequestedBy == userId);
             }
 
-            if (fromDate.HasValue)
+            if (startUtc.HasValue)
+            {
                 refundQuery = refundQuery.Where(r =>
-                    (r.RefundedAt.HasValue && r.RefundedAt.Value >= fromDate.Value) ||
-                    (r.RequestedAt.HasValue && r.RequestedAt.Value >= fromDate.Value));
-            if (toDate.HasValue)
+                    (r.RefundedAt.HasValue && r.RefundedAt.Value >= startUtc.Value) ||
+                    (r.RequestedAt.HasValue && r.RequestedAt.Value >= startUtc.Value));
+            }
+            if (endUtc.HasValue)
+            {
                 refundQuery = refundQuery.Where(r =>
-                    (r.RefundedAt.HasValue && r.RefundedAt.Value <= toDate.Value) ||
-                    (r.RequestedAt.HasValue && r.RequestedAt.Value <= toDate.Value));
+                    (r.RefundedAt.HasValue && r.RefundedAt.Value <= endUtc.Value) ||
+                    (r.RequestedAt.HasValue && r.RequestedAt.Value <= endUtc.Value));
+            }
 
-            foreach (var refund in await refundQuery.ToListAsync(cancellationToken))
+            var refunds = await refundQuery.ToListAsync(cancellationToken);
+            foreach (var refund in refunds)
             {
                 var packageTitle = refund.Order?.OrderDetails?.FirstOrDefault()?.PackageTitle ?? "Training Package";
-
-                // Trainee nhận tiền (dương), Coach mất tiền (âm)
-                var amount = isCoach ? -(refund.ApprovedAmount ?? refund.RequestedAmount ?? 0)
-                                     : (refund.ApprovedAmount ?? refund.RequestedAmount ?? 0);
+                var amount = isCoach 
+                    ? -(refund.ApprovedAmount ?? refund.RequestedAmount ?? 0)
+                    : (refund.ApprovedAmount ?? refund.RequestedAmount ?? 0);
 
                 records.Add(new TransactionRecord
                 {
@@ -142,14 +171,56 @@ namespace FitSocial.Infrastructure.Repositories
             }
 
             // ================================================================
-            // Lọc theo type (nếu FE truyền)
+            // 3. GIẢI NGÂN HỆ THỐNG (PAYOUT) - Dành riêng cho Coach
             // ================================================================
-            if (!string.IsNullOrWhiteSpace(type))
+            if (isCoach)
             {
-                records = records.Where(r => r.Type != null && r.Type.ToUpper() == type.ToUpper()).ToList();
+                var payoutQuery = _dbContext.Set<Payout>()
+                    .AsNoTracking()
+                    .Include(p => p.PayoutItems)
+                        .ThenInclude(pi => pi.Order)
+                            .ThenInclude(o => o.OrderDetails)
+                    .Where(p => p.CoachId == userId && (p.Status == "PROCESSED" || p.Status == "COMPLETED" || p.Status == "PENDING"));
+
+                if (startUtc.HasValue)
+                    payoutQuery = payoutQuery.Where(p => (p.ProcessedAt.HasValue && p.ProcessedAt.Value >= startUtc.Value) || (p.CreatedAt.HasValue && p.CreatedAt.Value >= startUtc.Value));
+                if (endUtc.HasValue)
+                    payoutQuery = payoutQuery.Where(p => (p.ProcessedAt.HasValue && p.ProcessedAt.Value <= endUtc.Value) || (p.CreatedAt.HasValue && p.CreatedAt.Value <= endUtc.Value));
+
+                var payouts = await payoutQuery.ToListAsync(cancellationToken);
+                foreach (var payout in payouts)
+                {
+                    var totalNetAmount = payout.PayoutItems?.Sum(pi => pi.NetAmount ?? 0) ?? 0;
+                    var packageTitle = payout.PayoutItems?
+                        .FirstOrDefault(pi => pi.Order != null && pi.Order.OrderDetails != null && pi.Order.OrderDetails.Any())
+                        ?.Order?.OrderDetails?.FirstOrDefault()?.PackageTitle;
+
+                    var desc = !string.IsNullOrEmpty(packageTitle)
+                        ? $"System payout: {packageTitle} (Cycle {payout.PayoutMonth:D2}/{payout.PayoutYear})"
+                        : $"System payout (Cycle {payout.PayoutMonth:D2}/{payout.PayoutYear})";
+
+                    records.Add(new TransactionRecord
+                    {
+                        TransactionId = payout.PayoutId,
+                        Date = payout.ProcessedAt ?? payout.CreatedAt ?? DateTime.UtcNow,
+                        Amount = payout.NetPayoutAmount ?? totalNetAmount,
+                        Currency = "VND",
+                        Type = "PAYOUT",
+                        Status = payout.Status ?? "PROCESSED",
+                        Description = desc,
+                        ReferenceId = payout.TransactionRef ?? $"PAYOUT-{payout.PayoutId}"
+                    });
+                }
             }
 
-            // Sắp xếp và phân trang
+            // ================================================================
+            // 4. LỌC THEO TYPE & SẮP XẾP, PHÂN TRANG
+            // ================================================================
+            if (!string.IsNullOrWhiteSpace(type) && !type.Equals("ALL", StringComparison.OrdinalIgnoreCase))
+            {
+                records = records.Where(r => r.Type != null && r.Type.Equals(type, StringComparison.OrdinalIgnoreCase)).ToList();
+            }
+
             var totalCount = records.Count;
             var pagedItems = records
                 .OrderByDescending(x => x.Date)
@@ -168,34 +239,28 @@ namespace FitSocial.Infrastructure.Repositories
             if (pageSize < 1) pageSize = 10;
             if (pageSize > 100) pageSize = 100;
 
-            // Chỉ lấy tiền hệ thống gửi coach (payout), KHÔNG có refund deducted
+            DateTime? startUtc = fromDate.HasValue ? fromDate.Value.Date.AddHours(-7) : null;
+            DateTime? endUtc = toDate.HasValue ? toDate.Value.Date.AddDays(1).AddTicks(-1).AddHours(-7) : null;
+
             var query = _dbContext.Set<Payout>()
+                .AsNoTracking()
                 .Include(p => p.PayoutItems)
                     .ThenInclude(pi => pi.Order)
                         .ThenInclude(o => o.OrderDetails)
                 .Where(p => p.CoachId == coachId
-                         && (p.Status == "PROCESSED" || p.Status == "COMPLETED"));
+                         && (p.Status == "PROCESSED" || p.Status == "COMPLETED" || p.Status == "PENDING"));
 
-            if (fromDate.HasValue)
-                query = query.Where(p => p.ProcessedAt.HasValue && p.ProcessedAt.Value >= fromDate.Value);
-            if (toDate.HasValue)
-                query = query.Where(p => p.ProcessedAt.HasValue && p.ProcessedAt.Value <= toDate.Value);
+            if (startUtc.HasValue)
+                query = query.Where(p => (p.ProcessedAt.HasValue && p.ProcessedAt.Value >= startUtc.Value) || (p.CreatedAt.HasValue && p.CreatedAt.Value >= startUtc.Value));
+            if (endUtc.HasValue)
+                query = query.Where(p => (p.ProcessedAt.HasValue && p.ProcessedAt.Value <= endUtc.Value) || (p.CreatedAt.HasValue && p.CreatedAt.Value <= endUtc.Value));
 
-            var payouts = await query
-                .OrderByDescending(p => p.ProcessedAt)
-                .Skip((pageIndex - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync(cancellationToken);
-
-            var totalCount = await query.CountAsync(cancellationToken);
-
+            var rawPayouts = await query.ToListAsync(cancellationToken);
             var records = new List<TransactionRecord>();
-            foreach (var payout in payouts)
-            {
-                // Lấy tổng net amount của tất cả items trong payout này
-                var totalNetAmount = payout.PayoutItems?.Sum(pi => pi.NetAmount ?? 0) ?? 0;
 
-                // Lấy package title từ item đầu tiên (nếu có)
+            foreach (var payout in rawPayouts)
+            {
+                var totalNetAmount = payout.PayoutItems?.Sum(pi => pi.NetAmount ?? 0) ?? 0;
                 var packageTitle = payout.PayoutItems?
                     .FirstOrDefault(pi => pi.Order != null && pi.Order.OrderDetails != null && pi.Order.OrderDetails.Any())
                     ?.Order?.OrderDetails?.FirstOrDefault()?.PackageTitle ?? "Training Package";
@@ -204,7 +269,7 @@ namespace FitSocial.Infrastructure.Repositories
                 {
                     TransactionId = payout.PayoutId,
                     Date = payout.ProcessedAt ?? payout.CreatedAt ?? DateTime.UtcNow,
-                    Amount = payout.NetPayoutAmount ?? totalNetAmount, // Ưu tiên netpayoutamount từ bảng payouts
+                    Amount = payout.NetPayoutAmount ?? totalNetAmount,
                     Currency = "VND",
                     Type = "PAYOUT",
                     Status = payout.Status ?? "PROCESSED",
@@ -213,13 +278,19 @@ namespace FitSocial.Infrastructure.Repositories
                 });
             }
 
-            // Lọc theo type (nếu FE truyền)
-            if (!string.IsNullOrWhiteSpace(type))
+            if (!string.IsNullOrWhiteSpace(type) && !type.Equals("ALL", StringComparison.OrdinalIgnoreCase))
             {
-                records = records.Where(r => r.Type != null && r.Type.ToUpper() == type.ToUpper()).ToList();
+                records = records.Where(r => r.Type != null && r.Type.Equals(type, StringComparison.OrdinalIgnoreCase)).ToList();
             }
 
-            return (records, totalCount);
+            var totalCount = records.Count;
+            var pagedItems = records
+                .OrderByDescending(x => x.Date)
+                .Skip((pageIndex - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            return (pagedItems, totalCount);
         }
     }
 }

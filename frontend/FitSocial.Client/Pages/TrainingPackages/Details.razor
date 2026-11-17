@@ -292,6 +292,12 @@
                                             <span>Purchased</span>
                                         </button>
                                     }
+                                    else if (!package.IsActive)
+                                    {
+                                        <div class="w-full bg-gray-100 border border-gray-200 text-gray-500 py-3.5 px-4 rounded-xl font-bold text-sm text-center flex items-center justify-center gap-2 cursor-not-allowed">
+                                            <span>This training package is currently inactive and unavailable for purchase.</span>
+                                        </div>
+                                    }
                                     else if (inCart)
                                     {
                                         <!-- In Cart State -->
@@ -372,7 +378,7 @@
                             <!-- Score Box -->
                             <div class="text-center sm:border-r sm:border-orange-200/60 sm:pr-8">
                                 <div class="text-4xl font-extrabold text-[#FF5500] mb-1">
-                                    @(reviewSummary.TotalReviews > 0 ? reviewSummary.AverageRating.ToString("0.0") : "5.0")
+                                    @(reviewSummary.TotalReviews > 0 ? reviewSummary.AverageRating.ToString("0.0") : "0.0")
                                     <span class="text-lg font-medium text-gray-500">/ 5</span>
                                 </div>
                                 <div class="flex items-center justify-center gap-1 text-yellow-400">
@@ -776,7 +782,7 @@
             {
                 // Only block repurchasing if trainee currently has an active ongoing enrollment (within duration).
                 // Trainees whose package duration has expired / completed can repurchase it.
-                var activePaidStatuses = new[] { "PAID", "COMPLETED", "ACTIVE" };
+                var activePaidStatuses = new[] { "PAID", "COMPLETED", "ACTIVE", "REFUND_PENDING" };
                 var now = DateTime.UtcNow;
                 var reviewOrder = ordersRes.Data.FirstOrDefault(o =>
                     !string.IsNullOrWhiteSpace(o.OrderStatus) &&
@@ -845,6 +851,12 @@
         if (package == null)
         {
             ShowErrorToast("Cannot add an invalid package.");
+            return;
+        }
+
+        if (!package.IsActive)
+        {
+            ShowErrorToast("This training package is no longer active.");
             return;
         }
 
@@ -983,6 +995,12 @@
         }
 
         if (package == null) return;
+
+        if (!package.IsActive)
+        {
+            ShowErrorToast("This training package is no longer active.");
+            return;
+        }
 
         if (isOwnPackage)
         {

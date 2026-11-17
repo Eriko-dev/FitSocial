@@ -16,8 +16,10 @@ public interface ICoachService
 
     Task<ApiResponse<List<CoachBankAccountDto>>> GetBankAccountsAsync();
     Task<ApiResponse<CoachBankAccountDto>> AddBankAccountAsync(CreateCoachBankAccountDto dto);
+    Task<ApiResponse<CoachBankAccountDto>> UpdateBankAccountAsync(Guid bankId, CreateCoachBankAccountDto dto);
     Task<ApiResponse<bool>> SetDefaultBankAccountAsync(Guid bankId);
     Task<ApiResponse<bool>> DeleteBankAccountAsync(Guid bankId);
+    Task<ApiResponse<string?>> LookupBankAccountAsync(string bin, string accountNumber);
     Task<ApiResponse<CoachApplicationListResponseDto>> GetCoachApplicationsAsync(
         string? search = null,
         string? status = null,

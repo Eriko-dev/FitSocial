@@ -1166,6 +1166,10 @@ public partial class FitSocialDbContext : DbContext
                 .HasColumnType("timestamp without time zone");
             entity.Property(e => e.LogDate).HasColumnType("timestamp without time zone");
             entity.Property(e => e.Notes).HasMaxLength(300);
+            entity.Property(e => e.MediaUrl).HasMaxLength(500);
+            entity.Property(e => e.CoachFeedback).HasMaxLength(500);
+            entity.Property(e => e.ReviewedBy).HasColumnName("ReviewedBy");
+            entity.Property(e => e.ReviewedAt).HasColumnType("timestamp without time zone");
             entity.Property(e => e.Status).HasMaxLength(30);
             entity.Property(e => e.TraineeId).HasColumnName("TraineeID");
             entity.Property(e => e.TrainingPlanExerciseId).HasColumnName("TrainingPlanExerciseID");
@@ -1173,6 +1177,10 @@ public partial class FitSocialDbContext : DbContext
             entity.HasOne(d => d.Trainee).WithMany(p => p.WorkoutCompletionLogs)
                 .HasForeignKey(d => d.TraineeId)
                 .HasConstraintName("WorkoutCompletionLog_TraineeID_fkey");
+
+            entity.HasOne(d => d.ReviewedByCoach).WithMany()
+                .HasForeignKey(d => d.ReviewedBy)
+                .HasConstraintName("WorkoutCompletionLog_ReviewedBy_fkey");
 
             entity.HasOne(d => d.TrainingPlanExercise).WithMany(p => p.WorkoutCompletionLogs)
                 .HasForeignKey(d => d.TrainingPlanExerciseId)
