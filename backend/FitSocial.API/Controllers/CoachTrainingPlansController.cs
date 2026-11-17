@@ -10,6 +10,7 @@ using FitSocial.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace FitSocial.API.Controllers;
 
@@ -27,6 +28,7 @@ public class CoachTrainingPlansController : ControllerBase
     private readonly ITransactionService _transactionService;
     private readonly ILogger<CoachTrainingPlansController> _logger;
 
+    [ActivatorUtilitiesConstructor]
     public CoachTrainingPlansController(
         ITrainingPlanService trainingPlanService,
         ITransactionService transactionService,
