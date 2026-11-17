@@ -52,7 +52,7 @@ public class TrainingPlanService : ITrainingPlanService
 
         if (!dto.StartDate.HasValue)
         {
-            throw new ValidationException("Ngày bắt đầu (StartDate) là bắt buộc.");
+            throw new ValidationException("StartDate is required.");
         }
 
         // Verify order detail exists and coach ownership
@@ -1057,7 +1057,7 @@ public class TrainingPlanService : ITrainingPlanService
                 ActorId = traineeId,
                 ReferenceId = parentPlan.TrainingPlanId,
                 Type = "WORKOUT_COMPLETION_REQUESTED",
-                Description = $"Học viên {traineeName} đã gửi minh chứng hoàn thành bài tập \"{exerciseName}\" (Tuần {exercise.WeekNumber ?? 1}, Ngày {exercise.DayNumber ?? 1}) cho gói \"{packageTitle}\" để bạn duyệt.",
+                Description = $"Trainee {traineeName} submitted completion proof for workout \"{exerciseName}\" (Week {exercise.WeekNumber ?? 1}, Day {exercise.DayNumber ?? 1}) for package \"{packageTitle}\".",
                 IsRead = false,
                 CreatedAt = DateTime.UtcNow
             }, ct);
@@ -1199,9 +1199,9 @@ public class TrainingPlanService : ITrainingPlanService
 
             var notifDesc = isApproved
                 ? (string.IsNullOrWhiteSpace(feedback)
-                    ? $"HLV {coachName} đã duyệt hoàn thành bài tập \"{exerciseName}\"."
-                    : $"HLV {coachName} đã duyệt hoàn thành bài tập \"{exerciseName}\". Nhận xét: \"{feedback}\"")
-                : $"HLV {coachName} chưa duyệt hoàn thành bài tập \"{exerciseName}\" (chưa đạt). Nhận xét: \"{feedback}\"";
+                    ? $"Coach {coachName} approved workout \"{exerciseName}\"."
+                    : $"Coach {coachName} approved workout \"{exerciseName}\". Feedback: \"{feedback}\"")
+                : $"Coach {coachName} reviewed workout \"{exerciseName}\" as incomplete. Feedback: \"{feedback}\"";
 
             await _notifications.AddAsync(new Notification
             {

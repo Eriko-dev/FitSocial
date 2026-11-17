@@ -202,14 +202,14 @@
 
                     @if (workoutPlan.RemainingDays.HasValue && workoutPlan.RemainingDays.Value <= 5 && workoutPlan.ProgressPercentage < 50 && workoutPlan.TotalExercisesCount > 0 && workoutPlan.CompletedExercisesCount < workoutPlan.TotalExercisesCount)
                     {
-                        <!-- Cảnh báo gói tập sắp hết hạn nhưng tiến độ còn quá thấp -->
+                        <!-- Low workout progress alert before package expires -->
                         <div class="mt-4 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 flex items-start gap-3">
                             <svg class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                             </svg>
                             <div class="text-xs">
-                                <strong class="font-bold text-amber-900 block text-sm mb-0.5">Cảnh báo tiến độ tập luyện thấp!</strong>
-                                Gói tập của bạn chỉ còn <strong>@workoutPlan.RemainingDays.Value ngày</strong> nhưng bạn mới hoàn thành <strong>@workoutPlan.ProgressPercentage%</strong> giáo án. Hãy tích cực tập luyện để hoàn thành mục tiêu trước khi gói tập hết hạn!
+                                <strong class="font-bold text-amber-900 block text-sm mb-0.5">Low workout progress alert!</strong>
+                                Your training package has only <strong>@workoutPlan.RemainingDays.Value days remaining</strong> but you have only completed <strong>@workoutPlan.ProgressPercentage%</strong> of the program. Keep exercising to reach your fitness goals before expiration!
                             </div>
                         </div>
                     }
@@ -257,7 +257,7 @@
                     </div>
                 </div>
 
-                <!-- VIDEO TUTORIAL PLAYER SECTION (Khi bài tập có Video) -->
+                <!-- VIDEO TUTORIAL PLAYER SECTION (When exercise has a video) -->
                 @if (activeExercise != null && activeExercise.VideoTutorial != null && !string.IsNullOrWhiteSpace(activeExercise.VideoTutorial.VideoUrl))
                 {
                     <div class="bg-gray-900 rounded-2xl overflow-hidden shadow-md border border-gray-800 text-white animate-in fade-in duration-300">
@@ -346,13 +346,13 @@
                                             else if (string.Equals(ex.Status, "PENDING_REVIEW", StringComparison.OrdinalIgnoreCase))
                                             {
                                                 <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200 animate-pulse">
-                                                    ⏳ Chờ HLV duyệt
+                                                    ⏳ Pending Coach Review
                                                 </span>
                                             }
                                             else if (string.Equals(ex.Status, "UNCOMPLETE", StringComparison.OrdinalIgnoreCase))
                                             {
                                                 <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">
-                                                    ⚠️ Chưa đạt / Cần tập lại
+                                                    ⚠️ Needs Work / Retry
                                                 </span>
                                             }
                                         </div>
@@ -406,10 +406,10 @@
                                         @if (!string.IsNullOrWhiteSpace(ex.MediaUrl))
                                         {
                                             <div class="mt-1.5 flex items-center gap-2 text-xs">
-                                                <span class="text-gray-500 font-semibold">Minh chứng:</span>
+                                                <span class="text-gray-500 font-semibold">Proof:</span>
                                                 <a href="@ex.MediaUrl" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-700 underline font-bold flex items-center gap-1">
                                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-                                                    Xem ảnh / video đã nộp
+                                                    View submitted proof
                                                 </a>
                                             </div>
                                         }
@@ -420,7 +420,7 @@
                                             <div class="mt-2 p-2.5 rounded-xl border text-xs @(string.Equals(ex.Status, "UNCOMPLETE", StringComparison.OrdinalIgnoreCase) ? "bg-rose-50 border-rose-200 text-rose-900" : "bg-blue-50 border-blue-200 text-blue-900")">
                                                 <div class="flex items-center gap-1.5 font-bold mb-0.5">
                                                     <svg class="w-4 h-4 @(string.Equals(ex.Status, "UNCOMPLETE", StringComparison.OrdinalIgnoreCase) ? "text-rose-600" : "text-blue-600")" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-                                                    <span>Phản hồi của HLV:</span>
+                                                    <span>Coach Feedback:</span>
                                                 </div>
                                                 <p class="italic">"@ex.CoachFeedback"</p>
                                             </div>
@@ -449,13 +449,13 @@
                                                 {
                                                     <div class="text-xs text-rose-800 bg-rose-50 p-2.5 rounded-xl border border-rose-200 flex items-start gap-2">
                                                         <svg class="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                                                        <span class="break-words leading-relaxed"><strong class="font-semibold text-rose-900">Lý do bỏ lỡ:</strong> @ex.TraineeNotes</span>
+                                                        <span class="break-words leading-relaxed"><strong class="font-semibold text-rose-900">Missed Reason:</strong> @ex.TraineeNotes</span>
                                                     </div>
                                                 }
                                                 <div class="flex items-center gap-2">
                                                     <input type="text"
                                                            maxlength="300"
-                                                           placeholder="Nhập lý do bạn bỏ lỡ bài tập này..."
+                                                           placeholder="Enter the reason why you missed this workout..."
                                                            value="@GetExerciseNote(ex.TrainingPlanExerciseId)"
                                                            @oninput="(e) => SetExerciseNote(ex.TrainingPlanExerciseId, e.Value?.ToString())"
                                                            class="flex-1 text-xs px-3.5 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-rose-400 focus:ring-1 focus:ring-rose-400 bg-white shadow-2xs placeholder-gray-400" />
@@ -469,7 +469,7 @@
                                                         }
                                                         else
                                                         {
-                                                            <span>Lưu lý do</span>
+                                                            <span>Save reason</span>
                                                         }
                                                     </button>
                                                 </div>
@@ -503,8 +503,8 @@
                                             <button type="button"
                                                     @onclick="() => OpenSubmitProofModal(ex)"
                                                     class="px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1.5 hover:bg-amber-100 transition cursor-pointer"
-                                                    title="Bấm để xem lại hoặc cập nhật minh chứng">
-                                                <span>⏳ Chờ duyệt</span>
+                                                    title="Click to view or update your proof">
+                                                <span>⏳ Needs Review</span>
                                             </button>
                                         }
                                         else if (!(CurrentDay?.IsToday ?? false))
@@ -521,7 +521,7 @@
                                                     @onclick="() => OpenSubmitProofModal(ex)"
                                                     class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs bg-[#FF5500] hover:bg-orange-600 text-white disabled:opacity-50">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                                <span>@(string.Equals(ex.Status, "UNCOMPLETE", StringComparison.OrdinalIgnoreCase) ? "Nộp lại" : "Complete")</span>
+                                                <span>@(string.Equals(ex.Status, "UNCOMPLETE", StringComparison.OrdinalIgnoreCase) ? "Resubmit" : "Complete")</span>
                                             </button>
                                         }
                                     </div>
@@ -544,7 +544,7 @@
                          OnReportSubmitted="HandleCoachReportSubmitted" />
     }
 
-    <!-- Modal Nộp minh chứng hoàn thành bài tập -->
+    <!-- Modal Submit Workout Completion Proof -->
     @if (showProofModal && submittingExercise != null)
     {
         <div class="fixed inset-0 bg-black/60 backdrop-blur-xs z-[100] flex items-center justify-center p-4">
@@ -555,8 +555,8 @@
                             🏋️
                         </div>
                         <div>
-                            <h3 class="text-sm font-black text-gray-900">Hoàn thành: @submittingExercise.ExerciseName</h3>
-                            <p class="text-[11px] text-gray-400">Gửi minh chứng để HLV duyệt hoàn thành bài tập</p>
+                            <h3 class="text-sm font-black text-gray-900">Complete: @submittingExercise.ExerciseName</h3>
+                            <p class="text-[11px] text-gray-400">Submit proof for your coach to review and verify completion</p>
                         </div>
                     </div>
                     <button type="button" @onclick="CloseSubmitProofModal" class="w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center cursor-pointer">
@@ -567,27 +567,27 @@
                 <div class="p-5 flex flex-col gap-4 text-xs">
                     <!-- File Upload -->
                     <div>
-                        <label class="font-bold text-gray-700 block mb-1">Ảnh hoặc Video tập luyện:</label>
+                        <label class="font-bold text-gray-700 block mb-1">Workout Photo or Video Proof:</label>
                         <InputFile OnChange="HandleProofFileUpload" accept="image/*,video/*" class="w-full text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-orange-50 file:text-[#FF5500] hover:file:bg-orange-100 cursor-pointer" />
                         @if (isUploadingProof)
                         {
                             <div class="mt-2 flex items-center gap-2 text-orange-600 font-semibold">
                                 <span class="w-3.5 h-3.5 border-2 border-orange-600 border-t-transparent rounded-full animate-spin"></span>
-                                <span>Đang tải file lên Cloudinary...</span>
+                                <span>Uploading file to Cloudinary...</span>
                             </div>
                         }
                         else if (!string.IsNullOrWhiteSpace(proofMediaUrl))
                         {
                             <div class="mt-2 p-2 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-emerald-800">
-                                <span class="truncate max-w-xs font-medium">✓ Đã đính kèm minh chứng</span>
-                                <a href="@proofMediaUrl" target="_blank" rel="noopener noreferrer" class="text-blue-600 font-bold underline">Xem</a>
+                                <span class="truncate max-w-xs font-medium">✓ Proof media attached</span>
+                                <a href="@proofMediaUrl" target="_blank" rel="noopener noreferrer" class="text-blue-600 font-bold underline">View</a>
                             </div>
                         }
                     </div>
 
                     <!-- Or manual URL -->
                     <div>
-                        <label class="font-semibold text-gray-500 block mb-1">Hoặc dán URL video / ảnh:</label>
+                        <label class="font-semibold text-gray-500 block mb-1">Or paste video / image URL:</label>
                         <input type="text"
                                @bind="proofMediaUrl"
                                placeholder="https://..."
@@ -596,11 +596,11 @@
 
                     <!-- Notes -->
                     <div>
-                        <label class="font-bold text-gray-700 block mb-1">Ghi chú của bạn (cảm nhận, mức tạ, số rep...):</label>
+                        <label class="font-bold text-gray-700 block mb-1">Your Notes (sets, reps, weight, feedback...):</label>
                         <textarea @bind="proofNotes"
                                   maxlength="300"
                                   rows="3"
-                                  placeholder="Ví dụ: Em đã hoàn thành 4 set với mức tạ 30kg, form bài này em thấy đã chuẩn hơn..."
+                                  placeholder="e.g. Completed 4 sets at 30kg, form felt much better today..."
                                   class="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-[#FF5500] resize-none"></textarea>
                         <div class="text-right text-[10px] text-gray-400">@((proofNotes?.Length ?? 0))/300</div>
                     </div>
@@ -608,17 +608,17 @@
 
                 <div class="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-2">
                     <button type="button" @onclick="CloseSubmitProofModal" disabled="@isSubmittingProof" class="px-4 py-2 bg-gray-200 text-gray-700 font-bold rounded-xl text-xs hover:bg-gray-300 transition cursor-pointer">
-                        Hủy
+                        Cancel
                     </button>
                     <button type="button" @onclick="SubmitProofAsync" disabled="@(isSubmittingProof || isUploadingProof)" class="px-4 py-2 bg-[#FF5500] text-white font-bold rounded-xl text-xs hover:bg-orange-600 transition cursor-pointer flex items-center gap-1.5 disabled:opacity-50">
                         @if (isSubmittingProof)
                         {
                             <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                            <span>Đang gửi...</span>
+                            <span>Submitting...</span>
                         }
                         else
                         {
-                            <span>Gửi HLV duyệt</span>
+                            <span>Submit for Review</span>
                         }
                     </button>
                 </div>
@@ -694,7 +694,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Trang này không có ô tìm kiếm riêng -> tắt ô tìm kiếm ở topbar dùng chung
+        // This page has no search bar -> disable shared topbar search
         Shell.ShowSearch = false;
 
         await LoadWorkoutPlanAsync();
@@ -825,7 +825,7 @@
         var note = GetExerciseNote(ex.TrainingPlanExerciseId);
         if (string.IsNullOrWhiteSpace(note))
         {
-            ShowToast("Vui lòng nhập lý do bạn bỏ lỡ bài tập này.");
+            ShowToast("Please enter the reason for missing this workout.");
             return;
         }
 
@@ -844,11 +844,11 @@
             ex.Status = "INCOMPLETE";
             ex.TraineeNotes = res.Data.Notes;
             exerciseNotes.Remove(ex.TrainingPlanExerciseId);
-            ShowToast("Đã lưu lý do bỏ lỡ bài tập!");
+            ShowToast("Missed workout reason saved successfully!");
         }
         else
         {
-            ShowToast(res.Message ?? "Không thể lưu lý do bỏ lỡ.");
+            ShowToast(res.Message ?? "Failed to save missed workout reason.");
         }
 
         togglingExerciseId = null;
@@ -930,16 +930,16 @@
             if (res.Success && !string.IsNullOrWhiteSpace(res.Data))
             {
                 proofMediaUrl = res.Data;
-                ShowToast("Đã tải lên minh chứng thành công!");
+                ShowToast("Proof uploaded successfully!");
             }
             else
             {
-                ShowToast(res.Message ?? "Tải file lên thất bại.");
+                ShowToast(res.Message ?? "Failed to upload file.");
             }
         }
         catch (Exception ex)
         {
-            ShowToast($"Lỗi upload: {ex.Message}");
+            ShowToast($"Upload error: {ex.Message}");
         }
         finally
         {
@@ -953,7 +953,7 @@
 
         if (string.IsNullOrWhiteSpace(proofMediaUrl) && string.IsNullOrWhiteSpace(proofNotes))
         {
-            ShowToast("Vui lòng đính kèm ảnh/video minh chứng hoặc ghi chú tập luyện.");
+            ShowToast("Please attach proof photo/video or add workout notes.");
             return;
         }
 
@@ -979,16 +979,16 @@
                 exerciseNotes.Remove(submittingExercise.TrainingPlanExerciseId);
 
                 CloseSubmitProofModal();
-                ShowToast("🎉 Đã gửi yêu cầu hoàn thành bài tập! Vui lòng chờ HLV duyệt.");
+                ShowToast("🎉 Workout completion request submitted! Please wait for coach review.");
             }
             else
             {
-                ShowToast(res.Message ?? "Không thể gửi yêu cầu hoàn thành bài tập.");
+                ShowToast(res.Message ?? "Failed to submit workout completion request.");
             }
         }
         catch (Exception ex)
         {
-            ShowToast($"Lỗi: {ex.Message}");
+            ShowToast($"Error: {ex.Message}");
         }
         finally
         {
