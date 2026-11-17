@@ -243,6 +243,22 @@
                             </div>
                         </div>
 
+                        <!-- Reporter Evidence -->
+                        @if (selectedAppeal.Media != null && selectedAppeal.Media.Any())
+                        {
+                            <div class="info-card">
+                                <div class="info-card-title"><AppIcon Name="image" /><span>Reporter Evidence (@selectedAppeal.Media.Count)</span></div>
+                                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;">
+                                    @foreach (var m in selectedAppeal.Media)
+                                    {
+                                        <a href="@m.MediaUrl" target="_blank" rel="noopener noreferrer" style="display:block;border-radius:6px;overflow:hidden;border:1px solid #e2e8f0;" title="Click to view full image">
+                                            <img src="@m.MediaUrl" alt="Evidence" style="width:72px;height:72px;object-fit:cover;" />
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+                        }
+
                         <!-- Appeal Content -->
                         <div class="info-card" style="background:#f0f9ff;border-color:#bae6fd;">
                             <div class="info-card-title" style="color:#0369a1;">
@@ -258,6 +274,22 @@
                                 @(string.IsNullOrWhiteSpace(selectedAppeal.AppealContent) ? "No appeal content provided." : selectedAppeal.AppealContent)
                             </div>
                         </div>
+
+                        <!-- Appellant Supporting Evidence -->
+                        @if (selectedAppeal.AppealMedia != null && selectedAppeal.AppealMedia.Any())
+                        {
+                            <div class="info-card" style="background:#fdf4ff;border-color:#f0abfc;">
+                                <div class="info-card-title" style="color:#a21caf;"><AppIcon Name="image" /><span>Appellant Supporting Evidence (@selectedAppeal.AppealMedia.Count)</span></div>
+                                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;">
+                                    @foreach (var m in selectedAppeal.AppealMedia)
+                                    {
+                                        <a href="@m.MediaUrl" target="_blank" rel="noopener noreferrer" style="display:block;border-radius:6px;overflow:hidden;border:1px solid #f0abfc;" title="Click to view full evidence">
+                                            <img src="@m.MediaUrl" alt="Appeal Evidence" style="width:72px;height:72px;object-fit:cover;" />
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+                        }
 
                         <!-- Already reviewed -->
                         @if (!string.Equals(selectedAppeal.AppealStatus, "PENDING", StringComparison.OrdinalIgnoreCase))

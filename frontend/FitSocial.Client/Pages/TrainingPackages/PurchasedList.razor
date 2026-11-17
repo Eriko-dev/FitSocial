@@ -27,8 +27,82 @@
     }
 
     <div class="flex flex-col gap-4 min-w-0">
-            <div class="bg-white rounded-xl shadow-sm p-5 flex justify-between items-center gap-4 border border-gray-100">
-                <h1 class="text-xl font-bold text-gray-800">My Purchased Packages</h1>
+            <div class="bg-white rounded-xl shadow-sm p-5 flex flex-col gap-4 border border-gray-100">
+                <div class="flex flex-wrap justify-between items-center gap-3">
+                    <h1 class="text-xl font-bold text-gray-800">My Purchased Packages</h1>
+                    @if (HasActiveFilters)
+                    {
+                        <button type="button" @onclick="ResetFiltersAsync"
+                                class="text-xs font-semibold text-[#FF5500] hover:text-orange-700 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-lg border border-orange-200 transition cursor-pointer flex items-center gap-1">
+                            <span>✕ Clear Filters</span>
+                        </button>
+                    }
+                </div>
+
+                <!-- Search, Filter & Sort Toolbar -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 pt-1">
+                    <!-- Search Input -->
+                    <div class="sm:col-span-2 lg:col-span-5 flex items-center gap-2">
+                        <div class="relative flex-1">
+                            <input type="text"
+                                   @bind="searchKeyword"
+                                   @bind:event="oninput"
+                                   @onkeydown="HandleSearchKeyDown"
+                                   placeholder="Search by package title or coach name..."
+                                   class="w-full pl-9 pr-8 py-2 text-xs sm:text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:bg-white focus:border-[#FF5500] focus:ring-1 focus:ring-[#FF5500] transition" />
+                            <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            @if (!string.IsNullOrWhiteSpace(searchKeyword))
+                            {
+                                <button type="button" @onclick="ClearSearchAsync" title="Clear search"
+                                        class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs cursor-pointer">
+                                    ✕
+                                </button>
+                            }
+                        </div>
+                        <button type="button" @onclick="ApplyFiltersAsync"
+                                class="px-3.5 py-2 bg-[#FF5500] hover:bg-orange-600 text-white text-xs font-bold rounded-xl transition cursor-pointer shrink-0 shadow-2xs">
+                            Search
+                        </button>
+                    </div>
+
+                    <!-- Status Filter -->
+                    <div class="lg:col-span-2">
+                        <select value="@selectedStatus" @onchange="OnStatusFilterChanged"
+                                class="w-full px-3 py-2 text-xs sm:text-sm bg-gray-50 border border-gray-200 rounded-xl text-gray-700 focus:outline-none focus:bg-white focus:border-[#FF5500] cursor-pointer">
+                            <option value="">All Statuses</option>
+                            <option value="ACTIVE">Active</option>
+                            <option value="COMPLETED">Completed</option>
+                            <option value="EXPIRED">Expired</option>
+                            <option value="REFUND_PENDING">Refund Pending</option>
+                            <option value="REFUNDED">Refunded</option>
+                        </select>
+                    </div>
+
+                    <!-- Package Type Filter -->
+                    <div class="lg:col-span-2">
+                        <select value="@selectedPackageType" @onchange="OnPackageTypeFilterChanged"
+                                class="w-full px-3 py-2 text-xs sm:text-sm bg-gray-50 border border-gray-200 rounded-xl text-gray-700 focus:outline-none focus:bg-white focus:border-[#FF5500] cursor-pointer">
+                            <option value="">All Types</option>
+                            <option value="BOTH">Workout + Nutrition</option>
+                            <option value="WORKOUT">Workout Only</option>
+                            <option value="MEAL">Meal Plan Only</option>
+                        </select>
+                    </div>
+
+                    <!-- Sort By -->
+                    <div class="sm:col-span-2 lg:col-span-3">
+                        <select value="@selectedSortBy" @onchange="OnSortByChanged"
+                                class="w-full px-3 py-2 text-xs sm:text-sm bg-gray-50 border border-gray-200 rounded-xl text-gray-700 focus:outline-none focus:bg-white focus:border-[#FF5500] cursor-pointer">
+                            <option value="NEWEST">Sort: Newest Purchased</option>
+                            <option value="OLDEST">Sort: Oldest Purchased</option>
+                            <option value="EXPIRING_SOON">Sort: Expiring Soon</option>
+                            <option value="PRICE_DESC">Sort: Price High → Low</option>
+                            <option value="PRICE_ASC">Sort: Price Low → High</option>
+                        </select>
+                    </div>
+                </div>
             </div>
 
             @if (isLoading)
@@ -48,8 +122,20 @@
                     <div class="w-16 h-16 mb-4 text-gray-300">
                         <svg class="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
                     </div>
-                    <h4 class="font-bold text-gray-800 text-lg mb-2">No purchased packages</h4>
-                    <p class="text-sm text-gray-500 mb-5">You haven't bought any training packages yet.</p>
+                    @if (HasActiveFilters)
+                    {
+                        <h4 class="font-bold text-gray-800 text-lg mb-2">No matching packages found</h4>
+                        <p class="text-sm text-gray-500 mb-5">No purchased packages match your current search or filter criteria.</p>
+                        <button type="button" @onclick="ResetFiltersAsync"
+                                class="px-4 py-2 bg-[#FF5500] hover:bg-orange-600 text-white text-xs font-bold rounded-xl transition cursor-pointer">
+                            Clear Filters
+                        </button>
+                    }
+                    else
+                    {
+                        <h4 class="font-bold text-gray-800 text-lg mb-2">No purchased packages</h4>
+                        <p class="text-sm text-gray-500 mb-5">You haven't bought any training packages yet.</p>
+                    }
                 </div>
             }
             else
@@ -58,6 +144,20 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         @foreach (var pkg in packages)
                         {
+                            var enrollmentStatus = GetEffectiveEnrollmentStatus(pkg);
+                            var isRefunded = enrollmentStatus == "REFUNDED";
+                            var isRefundPending = enrollmentStatus == "REFUND_PENDING";
+                            var isRefundRejected = string.Equals(pkg.RefundStatus, "REJECTED", StringComparison.OrdinalIgnoreCase);
+                            var isWorkoutReady = pkg.OrderDetailsId.HasValue
+                                              && !string.IsNullOrWhiteSpace(pkg.PlanStatus)
+                                              && !string.Equals(pkg.PlanStatus, "PENDING_COACH", StringComparison.OrdinalIgnoreCase)
+                                              && !string.Equals(pkg.PlanStatus, "DRAFT", StringComparison.OrdinalIgnoreCase);
+                            var isMealReady = pkg.OrderDetailsId.HasValue
+                                           && pkg.MealPlanId.HasValue
+                                           && (string.IsNullOrWhiteSpace(pkg.MealPlanStatus)
+                                               || (!string.Equals(pkg.MealPlanStatus, "PENDING_COACH", StringComparison.OrdinalIgnoreCase)
+                                                   && !string.Equals(pkg.MealPlanStatus, "DRAFT", StringComparison.OrdinalIgnoreCase)));
+
                             <div class="bg-white rounded-2xl shadow-sm hover:shadow-md border border-gray-100 hover:border-orange-200 transition-all duration-300 flex flex-col overflow-hidden group">
                                 <div class="p-5 flex flex-col flex-1">
                                 <div class="flex items-start gap-4 min-w-0 cursor-pointer" @onclick="() => OpenPackageDetailsModal(pkg)">
@@ -72,12 +172,57 @@
                                         </div>
                                     }
                                     <div class="min-w-0 flex-1">
-                                        <h3 class="text-base sm:text-lg font-bold text-gray-800 hover:text-orange-600 transition line-clamp-2 break-words" title="@pkg.Title">@pkg.Title</h3>
-                                        <p class="text-xs sm:text-sm text-gray-500 mb-2 truncate">Coach: <span class="font-semibold text-gray-700">@pkg.CoachName</span></p>
-                                        @if (pkg.OrderCreatedAt.HasValue)
-                                        {
-                                            <p class="text-xs text-gray-400 mb-2">Purchased on @pkg.OrderCreatedAt.Value.ToString("dd/MM/yyyy HH:mm")</p>
-                                        }
+                                        <div class="flex items-start justify-between gap-2 mb-0.5">
+                                            <h3 class="text-base sm:text-lg font-bold text-gray-800 hover:text-orange-600 transition line-clamp-2 break-words" title="@pkg.Title">@pkg.Title</h3>
+                                            @if (enrollmentStatus == "ACTIVE")
+                                            {
+                                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">Active</span>
+                                            }
+                                            else if (enrollmentStatus == "COMPLETED")
+                                            {
+                                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200 shrink-0">Completed</span>
+                                            }
+                                            else if (enrollmentStatus == "EXPIRED")
+                                            {
+                                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200 shrink-0">Expired</span>
+                                            }
+                                            else if (enrollmentStatus == "REFUND_PENDING")
+                                            {
+                                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200 shrink-0">Refund Pending</span>
+                                            }
+                                            else if (enrollmentStatus == "REFUNDED")
+                                            {
+                                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200 shrink-0">Refunded</span>
+                                            }
+                                        </div>
+
+                                        <p class="text-xs sm:text-sm text-gray-500 mb-1.5 truncate">Coach: <span class="font-semibold text-gray-700">@pkg.CoachName</span></p>
+
+                                        <div class="flex flex-col gap-0.5 mb-2 text-xs">
+                                            @if (pkg.OrderCreatedAt.HasValue)
+                                            {
+                                                <p class="text-gray-400">Purchased on: <span class="font-medium text-gray-600">@pkg.OrderCreatedAt.Value.ToString("dd/MM/yyyy HH:mm")</span></p>
+                                            }
+                                            @if (pkg.ExpiresAt.HasValue)
+                                            {
+                                                <p class="text-gray-400 flex items-center flex-wrap gap-1.5">
+                                                    <span>Expires on: <strong class="@(enrollmentStatus == "EXPIRED" ? "text-rose-600" : "text-gray-700")">@pkg.ExpiresAt.Value.ToString("dd/MM/yyyy HH:mm")</strong></span>
+                                                    @if (enrollmentStatus == "ACTIVE" && pkg.RemainingDays.HasValue)
+                                                    {
+                                                        <span class="px-1.5 py-0.2 rounded text-[11px] font-semibold @(pkg.RemainingDays.Value <= 3 ? "bg-amber-50 text-amber-700 border border-amber-200" : "bg-emerald-50 text-emerald-700")">
+                                                            @pkg.RemainingDays.Value day(s) left
+                                                        </span>
+                                                    }
+                                                    else if (enrollmentStatus == "EXPIRED")
+                                                    {
+                                                        <span class="px-1.5 py-0.2 rounded text-[11px] font-semibold bg-rose-50 text-rose-600">
+                                                            Expired
+                                                        </span>
+                                                    }
+                                                </p>
+                                            }
+                                        </div>
+
                                         <div class="flex flex-wrap gap-2 text-xs font-semibold text-gray-500">
                                             <span class="bg-gray-100 px-2 py-1 rounded">@($"{pkg.DurationDays} Days")</span>
                                             @if (pkg.SessionCount.HasValue)
@@ -120,52 +265,55 @@
                                     </div>
                                 </div>
                                 <div class="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-gray-100">
-                                    <!-- Start Workout Button (Only if package contains Workout) -->
-                                    @if (pkg.PackageType != "MEAL")
+                                    @if (!isRefunded)
                                     {
-                                        @if (pkg.OrderDetailsId.HasValue && !string.IsNullOrWhiteSpace(pkg.PlanStatus) && pkg.PlanStatus != "PENDING_COACH")
+                                        <!-- Start Workout Button (Only if package contains Workout) -->
+                                        @if (pkg.PackageType != "MEAL")
                                         {
-                                            <a href="/training-packages/workout/@pkg.OrderDetailsId"
-                                               class="px-3 py-2 bg-[#FF5500] hover:bg-orange-600 text-white text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 shadow-xs">
-                                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                                Start Workout
-                                            </a>
+                                            @if (isWorkoutReady)
+                                            {
+                                                <a href="/training-packages/workout/@pkg.OrderDetailsId"
+                                                   class="px-3 py-2 bg-[#FF5500] hover:bg-orange-600 text-white text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 shadow-xs">
+                                                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    Start Workout
+                                                </a>
+                                            }
+                                            else if (pkg.OrderDetailsId.HasValue)
+                                            {
+                                                <span class="px-3 py-2 bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold rounded-xl flex items-center gap-1.5 whitespace-nowrap shrink-0">
+                                                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    Workout Pending
+                                                </span>
+                                            }
                                         }
-                                        else if (pkg.OrderDetailsId.HasValue)
-                                        {
-                                            <span class="px-3 py-2 bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold rounded-xl flex items-center gap-1.5 whitespace-nowrap shrink-0">
-                                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                                Workout Pending
-                                            </span>
-                                        }
-                                    }
 
-                                    <!-- Meal Plan Button (Only if package contains Meal Plan) -->
-                                    @if (pkg.PackageType != "WORKOUT" && pkg.OrderDetailsId.HasValue)
-                                    {
-                                        @if (pkg.MealPlanId.HasValue)
+                                        <!-- Meal Plan Button (Only if package contains Meal Plan) -->
+                                        @if (pkg.PackageType != "WORKOUT" && pkg.OrderDetailsId.HasValue)
                                         {
-                                            <a href="/training-packages/meal-plan/@pkg.OrderDetailsId"
-                                               class="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 hover:border-emerald-300 text-emerald-700 border border-emerald-200 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 shadow-2xs">
-                                                <svg class="w-3.5 h-3.5 shrink-0 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                                </svg>
-                                                Meal Plan
-                                            </a>
-                                        }
-                                        else
-                                        {
-                                            <span class="px-3 py-2 bg-emerald-50/60 border border-emerald-200/80 text-emerald-700 text-xs font-semibold rounded-xl flex items-center gap-1.5 whitespace-nowrap shrink-0">
-                                                <svg class="w-3.5 h-3.5 shrink-0 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                                Meal Plan Pending
-                                            </span>
+                                            @if (isMealReady)
+                                            {
+                                                <a href="/training-packages/meal-plan/@pkg.OrderDetailsId"
+                                                   class="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 hover:border-emerald-300 text-emerald-700 border border-emerald-200 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 shadow-2xs">
+                                                    <svg class="w-3.5 h-3.5 shrink-0 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                                    </svg>
+                                                    Meal Plan
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <span class="px-3 py-2 bg-emerald-50/60 border border-emerald-200/80 text-emerald-700 text-xs font-semibold rounded-xl flex items-center gap-1.5 whitespace-nowrap shrink-0">
+                                                    <svg class="w-3.5 h-3.5 shrink-0 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    Meal Plan Pending
+                                                </span>
+                                            }
                                         }
                                     }
 
@@ -188,7 +336,7 @@
                                     }
 
                                     <!-- Refund Status / Action Button -->
-                                    @if (pkg.RefundStatus == "PENDING" || pkg.OrderStatus == "REFUND_PENDING")
+                                    @if (isRefundPending)
                                     {
                                         <span class="px-3 py-2 bg-amber-50 border border-amber-200 text-amber-700 text-xs font-bold rounded-xl flex items-center gap-1.5 whitespace-nowrap shrink-0 shadow-2xs" title="Refund request is currently being reviewed by Admin/Staff">
                                             <svg class="w-3.5 h-3.5 shrink-0 text-amber-600 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -197,7 +345,7 @@
                                             Refund Pending
                                         </span>
                                     }
-                                    else if (pkg.RefundStatus == "APPROVED" || pkg.OrderStatus == "REFUNDED")
+                                    else if (isRefunded)
                                     {
                                         <span class="px-3 py-2 bg-purple-50 border border-purple-200 text-purple-700 text-xs font-bold rounded-xl flex items-center gap-1.5 whitespace-nowrap shrink-0 shadow-2xs" title="Order has been refunded">
                                             <svg class="w-3.5 h-3.5 shrink-0 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -206,7 +354,16 @@
                                             Refunded
                                         </span>
                                     }
-                                    else if (pkg.OrderId.HasValue && pkg.OrderId.Value != Guid.Empty)
+                                    else if (isRefundRejected)
+                                    {
+                                        <span class="px-3 py-2 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold rounded-xl flex items-center gap-1.5 whitespace-nowrap shrink-0 shadow-2xs" title="Refund request was rejected">
+                                            <svg class="w-3.5 h-3.5 shrink-0 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            Refund Rejected
+                                        </span>
+                                    }
+                                    else if (pkg.OrderId.HasValue && pkg.OrderId.Value != Guid.Empty && enrollmentStatus != "EXPIRED")
                                     {
                                         <button type="button" @onclick="() => HandleRefundClick(pkg)" disabled="@isCheckingBankAccount" title="Request Refund" class="px-3 py-2 bg-gray-100 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 border border-gray-200 text-gray-600 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer shadow-2xs">
                                             <svg class="w-3.5 h-3.5 shrink-0 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -216,6 +373,19 @@
                                         </button>
                                     }
                                 </div>
+
+                                @if (isRefundRejected)
+                                {
+                                    <div class="mt-3 p-3 rounded-xl bg-rose-50/70 border border-rose-200 text-xs text-rose-800 flex items-start gap-2">
+                                        <svg class="w-4 h-4 text-rose-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <div>
+                                            <span class="font-bold">Refund Rejection Reason:</span>
+                                            <span class="ml-1">@(!string.IsNullOrWhiteSpace(pkg.RefundStaffNote) ? pkg.RefundStaffNote : "Your refund request did not meet the policy requirements.")</span>
+                                        </div>
+                                    </div>
+                                }
                             </div>
                         </div>
                 }
@@ -225,11 +395,11 @@
                 {
                     <div class="flex items-center justify-center gap-2 pt-2">
                         <button class="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-                                disabled="@(currentPage <= 1)"
+                                disabled="@(currentPage <= 1 || isLoading)"
                                 @onclick="PreviousPage">Previous</button>
                         <span class="text-sm text-gray-600">Page @currentPage of @totalPages (@totalCount packages)</span>
                         <button class="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-                                disabled="@(currentPage >= totalPages)"
+                                disabled="@(currentPage >= totalPages || isLoading)"
                                 @onclick="NextPage">Next</button>
                     </div>
                 }
@@ -239,12 +409,35 @@
 <!-- MODAL VIEW PURCHASED PACKAGE DETAILS -->
 @if (isDetailModalOpen && selectedDetailPackage != null)
 {
+    var detailStatus = GetEffectiveEnrollmentStatus(selectedDetailPackage);
     <div class="fixed inset-0 bg-black/60 backdrop-blur-xs z-[100] flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full p-6 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95">
             <!-- Modal Header -->
             <div class="flex items-start justify-between gap-3 pb-4 border-b border-gray-100 mb-4">
                 <div>
-                    <h3 class="text-xl font-bold text-gray-900 leading-snug">@selectedDetailPackage.Title</h3>
+                    <div class="flex items-center gap-2 mb-1">
+                        <h3 class="text-xl font-bold text-gray-900 leading-snug">@selectedDetailPackage.Title</h3>
+                        @if (detailStatus == "ACTIVE")
+                        {
+                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Active</span>
+                        }
+                        else if (detailStatus == "COMPLETED")
+                        {
+                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">Completed</span>
+                        }
+                        else if (detailStatus == "EXPIRED")
+                        {
+                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">Expired</span>
+                        }
+                        else if (detailStatus == "REFUND_PENDING")
+                        {
+                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">Refund Pending</span>
+                        }
+                        else if (detailStatus == "REFUNDED")
+                        {
+                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200">Refunded</span>
+                        }
+                    </div>
                     <p class="text-xs text-gray-500 mt-0.5">Coach: <strong class="text-gray-700">@selectedDetailPackage.CoachName</strong></p>
                 </div>
                 <button type="button" @onclick="ClosePackageDetailsModal" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center transition cursor-pointer flex-shrink-0" title="Close">
@@ -279,6 +472,48 @@
                     <p class="text-sm font-black text-[#FF5500]">@selectedDetailPackage.Price.ToString("N0") đ</p>
                 </div>
             </div>
+
+            <!-- Enrollment Validity & Expiration Info -->
+            @if (selectedDetailPackage.OrderCreatedAt.HasValue || selectedDetailPackage.ExpiresAt.HasValue)
+            {
+                <div class="mb-4 p-3.5 rounded-xl bg-gray-50 border border-gray-200 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                    <div>
+                        <span class="text-gray-400 font-bold uppercase text-[10px] block">Purchased On</span>
+                        <span class="font-semibold text-gray-800">@(selectedDetailPackage.OrderCreatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "—")</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-400 font-bold uppercase text-[10px] block">Expires On</span>
+                        <span class="font-semibold @(detailStatus == "EXPIRED" ? "text-rose-600" : "text-gray-800")">@(selectedDetailPackage.ExpiresAt?.ToString("dd/MM/yyyy HH:mm") ?? "—")</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-400 font-bold uppercase text-[10px] block">Validity Status</span>
+                        @if (detailStatus == "ACTIVE" && selectedDetailPackage.RemainingDays.HasValue)
+                        {
+                            <span class="font-bold text-emerald-600">Active (@selectedDetailPackage.RemainingDays.Value day(s) left)</span>
+                        }
+                        else if (detailStatus == "EXPIRED")
+                        {
+                            <span class="font-bold text-rose-600">Expired</span>
+                        }
+                        else if (detailStatus == "COMPLETED")
+                        {
+                            <span class="font-bold text-blue-600">Completed</span>
+                        }
+                        else
+                        {
+                            <span class="font-bold text-gray-700">@detailStatus</span>
+                        }
+                    </div>
+                </div>
+            }
+
+            @if (string.Equals(selectedDetailPackage.RefundStatus, "REJECTED", StringComparison.OrdinalIgnoreCase))
+            {
+                <div class="mb-4 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800">
+                    <span class="font-bold block mb-0.5">Refund Request Rejected:</span>
+                    <span>@(!string.IsNullOrWhiteSpace(selectedDetailPackage.RefundStaffNote) ? selectedDetailPackage.RefundStaffNote : "Your refund request did not meet the policy requirements.")</span>
+                </div>
+            }
 
             <!-- Package Inclusions -->
             <div class="mb-4 p-3 rounded-xl border flex items-center justify-between gap-2 @(selectedDetailPackage.PackageType == "WORKOUT" ? "bg-blue-50/50 border-blue-100 text-blue-900" : selectedDetailPackage.PackageType == "MEAL" ? "bg-emerald-50/50 border-emerald-100 text-emerald-900" : "bg-orange-50/50 border-orange-100 text-orange-900")">
@@ -363,7 +598,7 @@
                             }
                         </div>
                     }
-                    @if (!selectedDetailPackage.IsReviewEdited)
+                    @if (!selectedDetailPackage.IsReviewEdited && selectedDetailPackage.CanReview)
                     {
                         <div class="mt-2 text-right">
                             <button type="button" @onclick="OpenReviewFromDetails" class="text-xs font-bold text-[#FF5500] hover:underline cursor-pointer">
@@ -373,17 +608,26 @@
                     }
                     else
                     {
-                        <p class="text-[11px] text-gray-400 mt-1 italic">Review edited once (Maximum 1 edit reached)</p>
+                        <p class="text-[11px] text-gray-400 mt-1 italic">@(!string.IsNullOrWhiteSpace(selectedDetailPackage.CannotReviewReason) ? selectedDetailPackage.CannotReviewReason : "Review edited once (Maximum 1 edit reached)")</p>
                     }
                 }
                 else
                 {
-                    <div class="flex items-center justify-between gap-3">
-                        <p class="text-xs text-gray-500">You haven't rated this package yet.</p>
-                        <button type="button" @onclick="OpenReviewFromDetails" class="px-3 py-1 bg-[#FF5500] text-white text-xs font-semibold rounded-lg hover:bg-orange-600 transition cursor-pointer">
-                            Write Review
-                        </button>
-                    </div>
+                    @if (selectedDetailPackage.CanReview)
+                    {
+                        <div class="flex items-center justify-between gap-3">
+                            <p class="text-xs text-gray-500">You haven't rated this package yet.</p>
+                            <button type="button" @onclick="OpenReviewFromDetails" class="px-3 py-1 bg-[#FF5500] text-white text-xs font-semibold rounded-lg hover:bg-orange-600 transition cursor-pointer">
+                                Write Review
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-xs text-amber-700 font-medium">
+                            @(selectedDetailPackage.CannotReviewReason ?? "You can review this package once your training or meal plan is active.")
+                        </p>
+                    }
                 }
             </div>
 
@@ -805,6 +1049,86 @@
     private int totalCount = 0;
     private int totalPages = 0;
 
+    // Search, Filter & Sort State
+    private string searchKeyword = string.Empty;
+    private string selectedPackageType = string.Empty;
+    private string selectedStatus = string.Empty;
+    private string selectedSortBy = "NEWEST";
+
+    private bool HasActiveFilters =>
+        !string.IsNullOrWhiteSpace(searchKeyword) ||
+        !string.IsNullOrWhiteSpace(selectedPackageType) ||
+        !string.IsNullOrWhiteSpace(selectedStatus) ||
+        !string.Equals(selectedSortBy, "NEWEST", StringComparison.OrdinalIgnoreCase);
+
+    private static string GetEffectiveEnrollmentStatus(TrainingPackageResponseDto pkg)
+    {
+        if (!string.IsNullOrWhiteSpace(pkg.EnrollmentStatus))
+            return pkg.EnrollmentStatus.Trim().ToUpperInvariant();
+
+        if (string.Equals(pkg.RefundStatus, "APPROVED", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(pkg.OrderStatus, "REFUNDED", StringComparison.OrdinalIgnoreCase))
+            return "REFUNDED";
+
+        if (string.Equals(pkg.RefundStatus, "PENDING", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(pkg.OrderStatus, "REFUND_PENDING", StringComparison.OrdinalIgnoreCase))
+            return "REFUND_PENDING";
+
+        if (pkg.ExpiresAt.HasValue && DateTime.UtcNow >= pkg.ExpiresAt.Value)
+            return "EXPIRED";
+
+        return "ACTIVE";
+    }
+
+    private async Task ApplyFiltersAsync()
+    {
+        currentPage = 1;
+        await LoadPurchasedPackagesAsync(1);
+    }
+
+    private async Task ClearSearchAsync()
+    {
+        searchKeyword = string.Empty;
+        currentPage = 1;
+        await LoadPurchasedPackagesAsync(1);
+    }
+
+    private async Task ResetFiltersAsync()
+    {
+        searchKeyword = string.Empty;
+        selectedPackageType = string.Empty;
+        selectedStatus = string.Empty;
+        selectedSortBy = "NEWEST";
+        currentPage = 1;
+        await LoadPurchasedPackagesAsync(1);
+    }
+
+    private async Task HandleSearchKeyDown(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await ApplyFiltersAsync();
+        }
+    }
+
+    private async Task OnStatusFilterChanged(ChangeEventArgs e)
+    {
+        selectedStatus = e.Value?.ToString() ?? string.Empty;
+        await ApplyFiltersAsync();
+    }
+
+    private async Task OnPackageTypeFilterChanged(ChangeEventArgs e)
+    {
+        selectedPackageType = e.Value?.ToString() ?? string.Empty;
+        await ApplyFiltersAsync();
+    }
+
+    private async Task OnSortByChanged(ChangeEventArgs e)
+    {
+        selectedSortBy = e.Value?.ToString() ?? "NEWEST";
+        await ApplyFiltersAsync();
+    }
+
     // --- Các biến và hàm cho Modal Xem Chi Tiết Gói Đã Mua ---
     private bool isDetailModalOpen = false;
     private TrainingPackageResponseDto? selectedDetailPackage;
@@ -823,7 +1147,7 @@
 
     private void OpenReviewFromDetails()
     {
-        if (selectedDetailPackage == null) return;
+        if (selectedDetailPackage == null || !selectedDetailPackage.CanReview) return;
         var pkg = selectedDetailPackage;
         ClosePackageDetailsModal();
         if (!pkg.HasReviewed)
@@ -868,7 +1192,13 @@
         isLoading = true;
         errorMessage = null;
 
-        var response = await PackageService.GetPurchasedPackagesAsync(page, pageSize);
+        var response = await PackageService.GetPurchasedPackagesAsync(
+            page,
+            pageSize,
+            searchKeyword,
+            selectedPackageType,
+            selectedStatus,
+            selectedSortBy);
         if (response.Success && response.Data != null)
         {
             // Nếu trang hiện tại vượt quá tổng số trang (ví dụ sau khi dữ liệu thay đổi), tải lại trang cuối.
@@ -1088,9 +1418,9 @@
 
     private bool IsWithin7Days(TrainingPackageResponseDto? pkg)
     {
-        if (pkg == null) return false;
-        var purchaseDate = pkg.OrderCreatedAt ?? pkg.CreatedAt;
-        return (DateTime.UtcNow - purchaseDate).TotalDays <= 7.0;
+        if (pkg == null || !pkg.OrderCreatedAt.HasValue) return false;
+        var purchaseDateUtc = DateTime.SpecifyKind(pkg.OrderCreatedAt.Value, DateTimeKind.Utc);
+        return (DateTime.UtcNow - purchaseDateUtc).TotalDays <= 7.0;
     }
 
     private async Task HandleRefundClick(TrainingPackageResponseDto pkg)

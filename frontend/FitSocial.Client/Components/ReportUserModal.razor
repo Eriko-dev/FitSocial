@@ -67,7 +67,7 @@
                 <textarea @bind="descriptionText"
                           @bind:event="oninput"
                           disabled="@isSubmitting"
-                          maxlength="500"
+                          maxlength="1000"
                           rows="3"
                           placeholder="@(IsOtherSelected ? "Provide specific details regarding the violation..." : "Include any additional context or details for moderators...")"
                           class="w-full text-xs p-3 rounded-xl border @(!string.IsNullOrWhiteSpace(validationError) ? "border-red-400 focus:border-red-500" : "border-gray-200 focus:border-[#FF5500]") focus:outline-hidden transition resize-none"></textarea>
@@ -80,7 +80,7 @@
                     {
                         <span></span>
                     }
-                    <span>@(descriptionText?.Length ?? 0)/500</span>
+                    <span>@(descriptionText?.Length ?? 0)/1000</span>
                 </div>
             </div>
 
@@ -321,6 +321,12 @@
             return;
         }
 
+        if (!string.IsNullOrWhiteSpace(descriptionText) && descriptionText.Trim().Length > 1000)
+        {
+            validationError = "Description cannot exceed 1000 characters.";
+            return;
+        }
+
         isSubmitting = true;
 
         try
@@ -332,7 +338,7 @@
                 Reason = finalReason,
                 Description = string.IsNullOrWhiteSpace(descriptionText) ? null : descriptionText.Trim(),
                 Type = IsCoach ? "COACH" : "USER",
-                MediaUrls = reportImageUrls.Count > 0 ? reportImageUrls : null
+                MediaUrls = reportImageUrls.Count > 0 ? reportImageUrls.Take(5).ToList() : null
             };
 
             var res = await ReportService.ReportUserAsync(request);

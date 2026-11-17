@@ -24,10 +24,13 @@
 
                 <!-- Program Quick Switcher Tabs -->
                 <div class="flex items-center gap-2">
-                    <a href="/training-packages/workout/@OrderDetailsId"
-                       class="px-3.5 py-1.5 bg-white border border-gray-200 text-gray-600 text-xs font-semibold rounded-xl hover:bg-orange-50 hover:text-[#FF5500] hover:border-orange-200 transition shadow-2xs flex items-center gap-1.5">
-                        <span>Workout Hub</span>
-                    </a>
+                    @if (mealPlan == null || !string.Equals(mealPlan.PackageType, "MEAL", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <a href="/training-packages/workout/@OrderDetailsId"
+                           class="px-3.5 py-1.5 bg-white border border-gray-200 text-gray-600 text-xs font-semibold rounded-xl hover:bg-orange-50 hover:text-[#FF5500] hover:border-orange-200 transition shadow-2xs flex items-center gap-1.5">
+                            <span>Workout Hub</span>
+                        </a>
+                    }
                     <span class="px-3.5 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-1.5">
                         <span>Meal Plan</span>
                     </span>
@@ -70,9 +73,12 @@
                         Coach <strong class="text-gray-800">@(mealPlan?.CoachName ?? "Your Coach")</strong> has not yet assigned a meal plan for this package. Stay tuned or check your workout schedule in the meantime!
                     </p>
                     <div class="flex items-center gap-3">
-                        <a href="/training-packages/workout/@OrderDetailsId" class="px-5 py-2.5 bg-[#FF5500] hover:bg-orange-600 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5">
-                            <span>Go to Workout Hub</span>
-                        </a>
+                        @if (mealPlan == null || !string.Equals(mealPlan.PackageType, "MEAL", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <a href="/training-packages/workout/@OrderDetailsId" class="px-5 py-2.5 bg-[#FF5500] hover:bg-orange-600 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5">
+                                <span>Go to Workout Hub</span>
+                            </a>
+                        }
                         <a href="/training-packages/purchased" class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-xs rounded-xl transition">
                             Purchased Packages
                         </a>
@@ -117,6 +123,30 @@
                                 <p class="text-xs sm:text-sm text-gray-500 mt-1 line-clamp-2">
                                     @(string.IsNullOrWhiteSpace(mealPlan.Description) ? "Follow your customized daily nutrition plan to optimize your fitness goals and recovery." : mealPlan.Description)
                                 </p>
+                                @if (mealPlan.StartDate.HasValue || mealPlan.EndDate.HasValue)
+                                {
+                                    <div class="flex flex-wrap items-center gap-2 mt-2 text-xs">
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-100 text-gray-700 font-semibold border border-gray-200/80">
+                                            <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                            <span>@(mealPlan.StartDate?.ToString("dd/MM/yyyy") ?? "—") → @(mealPlan.EndDate?.ToString("dd/MM/yyyy") ?? "—")</span>
+                                        </span>
+                                        @if (mealPlan.RemainingDays.HasValue)
+                                        {
+                                            if (mealPlan.RemainingDays.Value > 0)
+                                            {
+                                                <span class="px-2.5 py-1 rounded-lg font-bold border @(mealPlan.RemainingDays.Value <= 3 ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-emerald-50 text-emerald-700 border-emerald-200")">
+                                                    @mealPlan.RemainingDays.Value day(s) remaining
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="px-2.5 py-1 rounded-lg font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                                    Plan Period Ended
+                                                </span>
+                                            }
+                                        }
+                                    </div>
+                                }
                             </div>
                         </div>
 
@@ -284,11 +314,14 @@
                                         </p>
                                     </div>
                                 </div>
-                                <div class="flex items-center gap-2 self-end sm:self-center">
-                                    <a href="/training-packages/workout/@OrderDetailsId" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 whitespace-nowrap">
-                                        <span>Start Day Workout</span>
-                                    </a>
-                                </div>
+                                @if (mealPlan == null || !string.Equals(mealPlan.PackageType, "MEAL", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <div class="flex items-center gap-2 self-end sm:self-center">
+                                        <a href="/training-packages/workout/@OrderDetailsId" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 whitespace-nowrap">
+                                            <span>Start Day Workout</span>
+                                        </a>
+                                    </div>
+                                }
                             </div>
                         </div>
                     }
@@ -367,6 +400,11 @@
                         selectedDayNumber = firstWeek.Days.First().DayNumber;
                     }
                 }
+            }
+            else if (!res.Success)
+            {
+                mealPlan = null;
+                errorMessage = res.Message ?? "Unable to load meal plan.";
             }
             else
             {

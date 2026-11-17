@@ -10,7 +10,7 @@ using FitSocial.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-
+using Microsoft.Extensions.DependencyInjection;
 namespace FitSocial.API.Controllers;
 
 /// <summary>
@@ -26,7 +26,7 @@ public class CoachTrainingPlansController : ControllerBase
     private readonly ITrainingPlanService _trainingPlanService;
     private readonly ITransactionService _transactionService;
     private readonly ILogger<CoachTrainingPlansController> _logger;
-
+     [ActivatorUtilitiesConstructor]
     public CoachTrainingPlansController(
         ITrainingPlanService trainingPlanService,
         ITransactionService transactionService,
@@ -189,6 +189,37 @@ public class CoachTrainingPlansController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "[CoachTrainingPlans] Error getting progress for order detail {OrderDetailsId}: {Message}", orderDetailsId, ex.Message);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Review Workout Completion: Coach reviews trainee's workout submission and approves (COMPLETED) or rejects (UNCOMPLETE) with feedback.
+    /// </summary>
+    [HttpPost("review-workout")]
+    [ProducesResponseType(typeof(ApiResponseDto<WorkoutCompletionResultDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponseDto<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponseDto<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponseDto<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponseDto<object>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ReviewWorkout(
+        [FromBody] CoachReviewWorkoutDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        var coachId = GetCurrentCoachId();
+        if (coachId == Guid.Empty)
+        {
+            return Unauthorized(ApiResponseDto<WorkoutCompletionResultDto>.Fail("Unauthorized: Invalid coach identity in token."));
+        }
+
+        try
+        {
+            var result = await _trainingPlanService.ReviewWorkoutCompletionAsync(coachId, dto, cancellationToken);
+            return Ok(ApiResponseDto<WorkoutCompletionResultDto>.Ok(result, "Workout completion reviewed successfully."));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[CoachTrainingPlans] Error reviewing workout completion for exercise {ExerciseId} by coach {CoachId}: {Message}", dto?.TrainingPlanExerciseId, coachId, ex.Message);
             throw;
         }
     }

@@ -122,25 +122,31 @@ public class ViewCoachListServiceTests
         }
 
         var sut = CreateSut();
+        var expectedKeyword = string.IsNullOrWhiteSpace(tc.SearchKeyword) ? null : tc.SearchKeyword;
+        var expectedSort = string.IsNullOrWhiteSpace(tc.SortBy) ? null : tc.SortBy;
 
         if (tc.RepositoryThrows)
         {
             await Assert.ThrowsAsync<InvalidOperationException>(() =>
-                sut.GetAllCoachesAsync(
-                    string.IsNullOrWhiteSpace(tc.SearchKeyword) ? null : tc.SearchKeyword,
-                    tc.MinExperience,
-                    string.IsNullOrWhiteSpace(tc.SortBy) ? null : tc.SortBy,
-                    1, 6, CancellationToken.None));
+                sut.GetAllCoachesAsync(expectedKeyword, tc.MinExperience, expectedSort, 1, 6, CancellationToken.None));
+
+            _repo.Verify(r => r.GetAllCoachesWithDetailsAsync(
+                expectedKeyword, tc.MinExperience, expectedSort, 1, 6, It.IsAny<CancellationToken>()), Times.Once);
             return;
         }
 
-        var result = await sut.GetAllCoachesAsync(
-            string.IsNullOrWhiteSpace(tc.SearchKeyword) ? null : tc.SearchKeyword,
-            tc.MinExperience,
-            string.IsNullOrWhiteSpace(tc.SortBy) ? null : tc.SortBy,
-            1, 6, CancellationToken.None);
+        var result = await sut.GetAllCoachesAsync(expectedKeyword, tc.MinExperience, expectedSort, 1, 6, CancellationToken.None);
+
+        _repo.Verify(r => r.GetAllCoachesWithDetailsAsync(
+            expectedKeyword, tc.MinExperience, expectedSort, 1, 6, It.IsAny<CancellationToken>()), Times.Once);
 
         Assert.Equal(tc.ExpectedCount, result.Items.Count);
+        Assert.Equal(tc.ExpectedCount, result.TotalCount);
+        Assert.Equal(1, result.PageNumber);
+        Assert.Equal(6, result.PageSize);
+        Assert.Equal(tc.ExpectedCount == 0 ? 0 : 1, result.TotalPages);
+        Assert.False(result.HasPreviousPage);
+        Assert.False(result.HasNextPage);
 
         if (tc.ExpectedCount > 0 && result.Items.Count > 0)
         {
@@ -158,7 +164,7 @@ public class ViewCoachListServiceTests
         }
     }
 
-    [Fact]
+    [Fact(DisplayName = "UTCID20 - Null coach navigation maps to Unknown Coach")]
     public async Task GetAllCoachesAsync_CoachWithNullNavigation_MapsToUnknownCoach()
     {
         _repo.Reset();
@@ -185,7 +191,7 @@ public class ViewCoachListServiceTests
         Assert.Equal("Unknown Coach", result.Items[0].FullName);
     }
 
-    [Fact]
+    [Fact(DisplayName = "UTCID21 - Rating and total reviews are calculated from non-null ratings")]
     public async Task GetAllCoachesAsync_RatingAndTotalReviews_CalculatedFromReviews()
     {
         _repo.Reset();
@@ -203,7 +209,7 @@ public class ViewCoachListServiceTests
         Assert.Equal(3, result.Items[0].TotalReviews);
     }
 
-    [Fact]
+    [Fact(DisplayName = "UTCID22 - Pagination metadata passes through")]
     public async Task GetAllCoachesAsync_Pagination_PassesThrough()
     {
         _repo.Reset();
@@ -223,6 +229,66 @@ public class ViewCoachListServiceTests
         Assert.Equal(2, result.TotalPages);
     }
 
+    [Fact(DisplayName = "UTCID23 - Null reviews yield zero rating and zero total reviews")]
+    public async Task GetAllCoachesAsync_ReviewsNull_RatingZeroAndTotalReviewsZero()
+    {
+        // Branch: c.Reviews is null -> null-conditional returns null -> fallback to empty list
+        _repo.Reset();
+        var coach = new CoachProfile
+        {
+            CoachId = Guid.NewGuid(),
+            ExperienceYears = 3,
+            Status = "ACTIVE",
+            ApprovalStatus = "APPROVED",
+            Reviews = null!,
+            Locations = new List<Location>(),
+            Coach = new User { FullName = "Null Reviews Coach", AvatarUrl = "avatar.png" }
+        };
+
+        _repo.Setup(r => r.GetAllCoachesWithDetailsAsync(
+                It.IsAny<string?>(), It.IsAny<int?>(), It.IsAny<string?>(),
+                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((new List<CoachProfile> { coach }, 1));
+
+        var sut = CreateSut();
+        var result = await sut.GetAllCoachesAsync(null, null, null, 1, 6, CancellationToken.None);
+
+        Assert.Single(result.Items);
+        Assert.Equal("Null Reviews Coach", result.Items[0].FullName);
+        Assert.Equal(0.0, result.Items[0].Rating);
+        Assert.Equal(0, result.Items[0].TotalReviews);
+    }
+
+    [Fact(DisplayName = "UTCID24 - Null locations yield an empty locations list")]
+    public async Task GetAllCoachesAsync_LocationsNull_EmptyLocationsList()
+    {
+        // Branch: c.Locations is null -> null-coalescing fallback to empty list
+        _repo.Reset();
+        var coach = new CoachProfile
+        {
+            CoachId = Guid.NewGuid(),
+            ExperienceYears = 3,
+            Status = "ACTIVE",
+            ApprovalStatus = "APPROVED",
+            Reviews = new List<Review> { new Review { Rating = 5 } },
+            Locations = null!,
+            Coach = new User { FullName = "Null Locations Coach", AvatarUrl = "avatar.png" }
+        };
+
+        _repo.Setup(r => r.GetAllCoachesWithDetailsAsync(
+                It.IsAny<string?>(), It.IsAny<int?>(), It.IsAny<string?>(),
+                It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((new List<CoachProfile> { coach }, 1));
+
+        var sut = CreateSut();
+        var result = await sut.GetAllCoachesAsync(null, null, null, 1, 6, CancellationToken.None);
+
+        Assert.Single(result.Items);
+        Assert.Equal(5.0, result.Items[0].Rating);
+        Assert.Equal(1, result.Items[0].TotalReviews);
+        Assert.Empty(result.Items[0].Locations);
+    }
+
     public class ViewCoachListTestCase
     {
         public string UtcId { get; set; } = string.Empty;
@@ -237,5 +303,7 @@ public class ViewCoachListServiceTests
         public string ExpectedFirstApprovalStatus { get; set; } = string.Empty;
         public int ExpectedFirstExperienceYears { get; set; }
         public int ExpectedFirstLocationCount { get; set; }
+
+        public override string ToString() => UtcId;
     }
 }

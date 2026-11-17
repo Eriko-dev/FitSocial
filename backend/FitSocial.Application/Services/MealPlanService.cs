@@ -24,6 +24,33 @@ public class MealPlanService : IMealPlanService
         _unitOfWork = unitOfWork;
     }
 
+    private static readonly HashSet<string> AllowedTraineeOrderStatuses = new(StringComparer.OrdinalIgnoreCase)
+    {
+        FitSocial.Domain.Constants.PaymentConstants.OrderStatusPaid,
+        FitSocial.Domain.Constants.PaymentConstants.OrderStatusActive,
+        FitSocial.Domain.Constants.PaymentConstants.OrderStatusCompleted,
+        FitSocial.Domain.Constants.PaymentConstants.OrderStatusRefundPending
+    };
+
+    private static void ValidateOrderStatusForTraineeAccess(Order? order)
+    {
+        if (order == null || string.IsNullOrWhiteSpace(order.OrderStatus))
+        {
+            return;
+        }
+
+        var status = order.OrderStatus.Trim();
+        if (string.Equals(status, FitSocial.Domain.Constants.PaymentConstants.OrderStatusRefunded, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ForbiddenException("This package has been refunded and its meal plan is no longer accessible.");
+        }
+
+        if (!AllowedTraineeOrderStatuses.Contains(status))
+        {
+            throw new ForbiddenException($"Meal plan is not accessible for order with status '{order.OrderStatus}'.");
+        }
+    }
+
     public async Task<TraineeMealPlanDto?> GetTraineeMealPlanAsync(
         Guid traineeId,
         Guid orderDetailsId,
@@ -33,11 +60,38 @@ public class MealPlanService : IMealPlanService
             throw new ForbiddenException("Invalid trainee identity.");
 
         var plan = await _mealPlanRepository.GetMealPlanByOrderDetailsAsync(orderDetailsId, ct);
-        if (plan == null) return null;
-
-        if (plan.OrderDetails?.Order != null && plan.OrderDetails.Order.BuyerId != traineeId)
+        if (plan == null)
         {
-            throw new ForbiddenException("You do not have permission to view this meal plan.");
+            var od = await _mealPlanRepository.GetOrderDetailWithOrderAndPackageAsync(orderDetailsId, ct);
+            if (od?.Order != null)
+            {
+                if (od.Order.BuyerId != traineeId)
+                {
+                    throw new ForbiddenException("You do not have permission to view this meal plan.");
+                }
+                ValidateOrderStatusForTraineeAccess(od.Order);
+
+                return new TraineeMealPlanDto
+                {
+                    MealPlanId = Guid.Empty,
+                    OrderDetailsId = orderDetailsId,
+                    PackageTitle = od.PackageTitle ?? od.Package?.Title ?? "Training Package",
+                    PackageType = od.PackageType ?? od.Package?.PackageType ?? "BOTH",
+                    CoachId = od.Order.CoachId ?? od.Package?.CoachId ?? Guid.Empty,
+                    CoachName = od.CoachName ?? od.Package?.Coach?.Coach?.FullName ?? "Your Coach",
+                    Status = "PENDING_COACH"
+                };
+            }
+            return null;
+        }
+
+        if (plan.OrderDetails?.Order != null)
+        {
+            if (plan.OrderDetails.Order.BuyerId != traineeId)
+            {
+                throw new ForbiddenException("You do not have permission to view this meal plan.");
+            }
+            ValidateOrderStatusForTraineeAccess(plan.OrderDetails.Order);
         }
 
         return MapToDto(plan);
@@ -338,6 +392,7 @@ public class MealPlanService : IMealPlanService
                     Calories = itemDto.Calories,
                     SortOrder = itemDto.SortOrder ?? defaultSort++
                 };
+                await _mealPlanRepository.AddItemAsync(newItem, ct);
                 existingPlan.MealPlanItems.Add(newItem);
             }
         }
@@ -464,6 +519,9 @@ public class MealPlanService : IMealPlanService
                         ?? plan.OrderDetails?.Package?.Title
                         ?? "Training Package",
             PackageThumbnailUrl = thumbnailUrl,
+            PackageType = plan.OrderDetails?.PackageType
+                       ?? plan.OrderDetails?.Package?.PackageType
+                       ?? "BOTH",
             CoachId = plan.Coach?.CoachId ?? plan.CoachId,
             CoachName = plan.Coach?.Coach?.FullName ?? "Your Coach",
             Title = plan.Title,

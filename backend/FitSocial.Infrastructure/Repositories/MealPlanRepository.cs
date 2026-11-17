@@ -80,4 +80,8 @@ public class MealPlanRepository : IMealPlanRepository
     {
         _context.MealPlanItems.RemoveRange(items);
     }
+    public async Task AddItemAsync(MealPlanItem item, CancellationToken ct = default)
+    {
+        await _context.MealPlanItems.AddAsync(item, ct);
+    }
 }

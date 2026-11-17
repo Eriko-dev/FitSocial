@@ -1,4 +1,4 @@
-﻿using FitSocial.Application.DTOs.Common;
+using FitSocial.Application.DTOs.Common;
 using FitSocial.Application.DTOs.TrainingPackage;
 using FitSocial.Application.Exceptions;
 using FitSocial.Application.Interfaces;
@@ -119,7 +119,12 @@ namespace FitSocial.API.Controllers
         [Authorize] // Bất kỳ user nào đăng nhập đều có thể lấy danh sách họ đã mua
         public async Task<IActionResult> GetPurchasedPackages(
             [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 10)
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? searchKeyword = null,
+            [FromQuery] string? packageType = null,
+            [FromQuery] string? status = null,
+            [FromQuery] string? sortBy = null,
+            CancellationToken cancellationToken = default)
         {
             var userIdString = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (!Guid.TryParse(userIdString, out var currentUserId))
@@ -127,7 +132,15 @@ namespace FitSocial.API.Controllers
                 return Unauthorized(ApiResponseDto<PagedResultDto<TrainingPackageResponseDto>>.Fail("Invalid token or user ID"));
             }
 
-            var packages = await _service.GetPurchasedPackagesAsync(currentUserId, pageNumber, pageSize);
+            var packages = await _service.GetPurchasedPackagesAsync(
+                currentUserId,
+                pageNumber,
+                pageSize,
+                searchKeyword,
+                packageType,
+                status,
+                sortBy,
+                cancellationToken);
             return Ok(ApiResponseDto<PagedResultDto<TrainingPackageResponseDto>>.Ok(packages));
         }
         // ==============================================================

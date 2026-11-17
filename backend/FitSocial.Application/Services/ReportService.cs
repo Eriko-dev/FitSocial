@@ -330,6 +330,13 @@ public class ReportService : IReportService
             throw new ValidationException("Invalid AppealStatus. Allowed values are 'APPROVED' or 'REJECTED'.");
         }
 
+        // Chặn Re-review nếu đơn kháng cáo đã được xử lý trước đó
+        if (string.Equals(report.AppealStatus, "APPROVED", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(report.AppealStatus, "REJECTED", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new BusinessException($"This appeal has already been reviewed ({report.AppealStatus}). Re-reviewing is not permitted to prevent data inconsistency.");
+        }
+
         var now = DateTime.UtcNow;
         report.AppealStatus = normalizedStatus;
         report.AppealReviewedBy = staffId;
@@ -432,10 +439,45 @@ public class ReportService : IReportService
             throw new ValidationException("Reason is required.");
         }
 
+        var trimmedReason = request.Reason.Trim();
+        if (trimmedReason.Length > 500)
+        {
+            throw new ValidationException("Reason cannot exceed 500 characters.");
+        }
+
+        var trimmedDescription = request.Description?.Trim();
+        if (!string.IsNullOrWhiteSpace(trimmedDescription) && trimmedDescription.Length > 1000)
+        {
+            throw new ValidationException("Description cannot exceed 1000 characters.");
+        }
+
         var reportedUser = await _userRepository.GetByIdAsync(request.ReportedUserId, cancellationToken);
         if (reportedUser == null)
         {
             throw new NotFoundException("Reported user not found.");
+        }
+
+        if (reportedUser.IsLocked == true)
+        {
+            throw new BusinessException("This user account is already locked or banned.");
+        }
+
+        // Chặn trùng lặp báo cáo: Mỗi người dùng chỉ được phép có tối đa 1 báo cáo ở trạng thái PENDING đối với cùng một người dùng mục tiêu
+        var hasPendingReport = await _reportRepository.HasPendingReportAsync(reporterId, request.ReportedUserId, cancellationToken);
+        if (hasPendingReport)
+        {
+            throw new BusinessException("You already have a pending report for this user. Please wait for our moderators to review it.");
+        }
+
+        // Khống chế số lượng ảnh bằng chứng: Tối đa 5 ảnh
+        var validMediaUrls = request.MediaUrls?
+            .Where(u => !string.IsNullOrWhiteSpace(u))
+            .Select(u => u.Trim())
+            .ToList();
+
+        if (validMediaUrls != null && validMediaUrls.Count > 5)
+        {
+            throw new ValidationException("You can attach a maximum of 5 evidence photos.");
         }
 
         var now = DateTime.UtcNow;
@@ -444,23 +486,23 @@ public class ReportService : IReportService
             ReportId = Guid.NewGuid(),
             ReporterId = reporterId,
             ReportedUserId = request.ReportedUserId,
-            Reason = request.Reason.Trim(),
-            Description = request.Description?.Trim(),
+            Reason = trimmedReason,
+            Description = trimmedDescription,
             Type = string.IsNullOrWhiteSpace(request.Type) ? "USER" : request.Type.Trim().ToUpperInvariant(),
             Status = "PENDING",
             CreatedAt = now
         };
 
-        if (request.MediaUrls != null && request.MediaUrls.Any())
+        if (validMediaUrls != null && validMediaUrls.Count > 0)
         {
             short sortOrder = 0;
-            foreach (var url in request.MediaUrls.Where(u => !string.IsNullOrWhiteSpace(u)))
+            foreach (var url in validMediaUrls)
             {
                 report.ReportMedia.Add(new ReportMedium
                 {
                     MediaId = Guid.NewGuid(),
                     ReportId = report.ReportId,
-                    MediaUrl = url.Trim(),
+                    MediaUrl = url,
                     MediaType = "IMAGE",
                     MediaFor = "REPORT",
                     SortOrder = sortOrder++,
@@ -995,6 +1037,19 @@ public class ReportService : IReportService
                     MediaFor = m.MediaFor,
                     SortOrder = m.SortOrder
                 }).ToList()
+                : new List<ReportMediaItemDto>(),
+
+            AppealMedia = r.Appeals != null && r.Appeals.Any()
+                ? r.Appeals.SelectMany(a => a.AppealMedia)
+                    .OrderBy(m => m.SortOrder)
+                    .Select(m => new ReportMediaItemDto
+                    {
+                        MediaId = m.MediaId,
+                        MediaUrl = m.MediaUrl,
+                        MediaType = m.MediaType,
+                        MediaFor = "APPEAL",
+                        SortOrder = m.SortOrder
+                    }).ToList()
                 : new List<ReportMediaItemDto>(),
 
             CreatedAt = r.CreatedAt

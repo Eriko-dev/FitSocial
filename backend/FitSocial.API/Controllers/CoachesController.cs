@@ -109,11 +109,12 @@ public class CoachesController : ControllerBase
     /// Gets the list of bank accounts registered by the user (coach or trainee).
     /// </summary>
     [HttpGet("bank-accounts")]
-    [Authorize(Roles = "COACH,TRAINEE")]
+    [Authorize]
     [ProducesResponseType(typeof(ApiResponseDto<List<CoachBankAccountDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetBankAccounts(CancellationToken cancellationToken = default)
     {
-        var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? User.FindFirst("sub")?.Value;
         if (!Guid.TryParse(userIdStr, out var currentUserId))
         {
             return Unauthorized(ApiResponseDto<List<CoachBankAccountDto>>.Fail("Unauthorized"));
@@ -127,12 +128,13 @@ public class CoachesController : ControllerBase
     /// Adds a new bank account with encrypted account number.
     /// </summary>
     [HttpPost("bank-accounts")]
-    [Authorize(Roles = "COACH,TRAINEE")]
+    [Authorize]
     [ProducesResponseType(typeof(ApiResponseDto<CoachBankAccountDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponseDto<object>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> AddBankAccount([FromBody] CreateCoachBankAccountDto dto, CancellationToken cancellationToken = default)
     {
-        var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? User.FindFirst("sub")?.Value;
         if (!Guid.TryParse(userIdStr, out var currentUserId))
         {
             return Unauthorized(ApiResponseDto<CoachBankAccountDto>.Fail("Unauthorized"));
@@ -143,15 +145,37 @@ public class CoachesController : ControllerBase
     }
 
     /// <summary>
+    /// Updates an existing bank account.
+    /// </summary>
+    [HttpPut("bank-accounts/{bankId:guid}")]
+    [Authorize]
+    [ProducesResponseType(typeof(ApiResponseDto<CoachBankAccountDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponseDto<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponseDto<object>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateBankAccount(Guid bankId, [FromBody] UpdateCoachBankAccountDto dto, CancellationToken cancellationToken = default)
+    {
+        var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? User.FindFirst("sub")?.Value;
+        if (!Guid.TryParse(userIdStr, out var currentUserId))
+        {
+            return Unauthorized(ApiResponseDto<CoachBankAccountDto>.Fail("Unauthorized"));
+        }
+
+        var result = await _bankAccountService.UpdateAccountAsync(currentUserId, bankId, dto, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Sets a bank account as default.
     /// </summary>
     [HttpPut("bank-accounts/{bankId:guid}/default")]
-    [Authorize(Roles = "COACH,TRAINEE")]
+    [Authorize]
     [ProducesResponseType(typeof(ApiResponseDto<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponseDto<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> SetDefaultBankAccount(Guid bankId, CancellationToken cancellationToken = default)
     {
-        var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? User.FindFirst("sub")?.Value;
         if (!Guid.TryParse(userIdStr, out var currentUserId))
         {
             return Unauthorized(ApiResponseDto<bool>.Fail("Unauthorized"));
@@ -165,12 +189,13 @@ public class CoachesController : ControllerBase
     /// Deletes a bank account.
     /// </summary>
     [HttpDelete("bank-accounts/{bankId:guid}")]
-    [Authorize(Roles = "COACH,TRAINEE")]
+    [Authorize]
     [ProducesResponseType(typeof(ApiResponseDto<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponseDto<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteBankAccount(Guid bankId, CancellationToken cancellationToken = default)
     {
-        var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userIdStr = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? User.FindFirst("sub")?.Value;
         if (!Guid.TryParse(userIdStr, out var currentUserId))
         {
             return Unauthorized(ApiResponseDto<bool>.Fail("Unauthorized"));
