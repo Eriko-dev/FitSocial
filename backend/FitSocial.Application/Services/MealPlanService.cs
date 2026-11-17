@@ -392,6 +392,7 @@ public class MealPlanService : IMealPlanService
                     Calories = itemDto.Calories,
                     SortOrder = itemDto.SortOrder ?? defaultSort++
                 };
+                await _mealPlanRepository.AddItemAsync(newItem, ct);
                 existingPlan.MealPlanItems.Add(newItem);
             }
         }
