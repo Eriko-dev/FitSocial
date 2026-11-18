@@ -335,12 +335,12 @@ public class PayoutService : IPayoutService
         var n = PayoutConstants.VestingMonths(durationDays);
         if (k < 0 || k >= n || n <= 1)
         {
-            return n <= 1 ? "100% kỳ này" : string.Empty;
+            return n <= 1 ? "100% this cycle" : string.Empty;
         }
         var pct = packageTotal > 0
             ? (trancheAmount / packageTotal * 100m).ToString("0.##")
             : "?";
-        return $"Kỳ {k + 1}/{n} • {pct}%";
+        return $"Cycle {k + 1}/{n} • {pct}%";
     }
 
     private static string PackageGroupKey(Payout payout, Guid orderId)

@@ -80,7 +80,7 @@ public class PayoutItemDto
     public decimal RefundAdjustment { get; set; }
     public decimal TaxAmount { get; set; }
     public decimal NetAmount { get; set; }
-    /// <summary>Monthly vesting label, e.g. "Kỳ 2/4". Empty for refund-only lines.</summary>
+    /// <summary>Monthly vesting label, e.g. "Cycle 2/4". Empty for refund-only lines.</summary>
     public string VestingInfo { get; set; } = string.Empty;
     public bool IsPaid { get; set; }
     public DateTime? ProcessedAt { get; set; }

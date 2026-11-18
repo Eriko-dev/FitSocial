@@ -173,7 +173,7 @@
                     else if (detail != null)
                     {
                         <!-- Calculation breakdown -->
-                        <p class="muted-sm" style="margin-bottom:8px;">Doanh thu ghi nhận theo kỳ tháng: gói N tháng thì mỗi tháng nhận 1/N giá trị gói.</p>
+                        <p class="muted-sm" style="margin-bottom:8px;">Revenue is recognized per monthly cycle: for an N-month package, each month receives 1/N of the package value.</p>
                         <div class="breakdown">
                             <div class="bd-row"><span>Gross Package Sales (@detail.Items.Count(i => i.GrossAmount > 0) orders)</span><strong>@detail.TotalGrossAmount.ToString("N0") VND</strong></div>
                             <div class="bd-row"><span>Platform Commission (@((detail.CommissionRate * 100).ToString("0"))%)</span><span>-@detail.SystemCommissionAmount.ToString("N0") VND</span></div>
@@ -222,7 +222,7 @@
                                         <div class="pkg-head">
                                             <div class="flex-1">
                                                 <div class="font-bold text-sm">@(!string.IsNullOrWhiteSpace(g.PackageTitle) ? g.PackageTitle : "Training Package")</div>
-                                                <div class="muted-sm">@g.MonthsTotal tháng • Đã trả @g.CyclePaidAmount.ToString("N0") / @g.CycleAmount.ToString("N0") VND</div>
+                                                <div class="muted-sm">@g.MonthsTotal months • Paid @g.CyclePaidAmount.ToString("N0") / @g.CycleAmount.ToString("N0") VND</div>
                                             </div>
                                             @if (g.IsFullyPaid)
                                             {
@@ -294,7 +294,7 @@
                         }
 
                         <div class="bd-row total" style="margin-top:8px;">
-                            <span>Còn lại cần trả:</span>
+                            <span>Remaining to pay:</span>
                             <strong>@RemainingAmount().ToString("N0") VND</strong>
                         </div>
 
