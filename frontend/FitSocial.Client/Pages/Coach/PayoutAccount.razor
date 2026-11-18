@@ -129,46 +129,22 @@
                                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                                     Account Number <span class="text-red-500">*</span>
                                 </label>
-                                <div class="flex gap-2">
-                                    <InputText @bind-Value="accountForm.AccountNumber"
-                                               class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FF5500] transition"
-                                               placeholder="Enter bank account number" />
-                                    <button type="button"
-                                            @onclick="HandleLookupAccountName"
-                                            disabled="@(isLookingUp || string.IsNullOrWhiteSpace(accountForm.BankCode) || string.IsNullOrWhiteSpace(accountForm.AccountNumber))"
-                                            class="px-3.5 py-2.5 rounded-xl border border-orange-200 bg-orange-50 text-[#FF5500] hover:bg-orange-100 text-xs font-bold transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 flex-shrink-0 cursor-pointer"
-                                            title="Verify account holder name via VietQR / Napas">
-                                        @if (isLookingUp)
-                                        {
-                                            <div class="w-3.5 h-3.5 border-2 border-[#FF5500] border-t-transparent rounded-full animate-spin"></div>
-                                        }
-                                        else
-                                        {
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                        }
-                                        <span>Verify</span>
-                                    </button>
-                                </div>
+                                <InputText @bind-Value="accountForm.AccountNumber"
+                                           class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FF5500] transition"
+                                           placeholder="Enter bank account number" />
+                                <p class="text-[11px] text-gray-400 mt-1">Enter 6–20 digits without spaces or special characters.</p>
                                 <ValidationMessage For="@(() => accountForm.AccountNumber)" class="text-red-500 text-xs mt-1" />
                             </div>
 
                             <!-- 4. Account Holder Name -->
                             <div>
-                                <div class="flex items-center justify-between mb-1.5">
-                                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">
-                                        Account Holder Name <span class="text-red-500">*</span>
-                                    </label>
-                                    @if (isAccountVerified)
-                                    {
-                                        <span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
-                                            Napas Verified
-                                        </span>
-                                    }
-                                </div>
+                                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                                    Account Holder Name <span class="text-red-500">*</span>
+                                </label>
                                 <InputText @bind-Value="accountForm.AccountName"
                                            class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-bold uppercase focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FF5500] transition"
                                            placeholder="e.g. NGUYEN VAN A" />
+                                <p class="text-[11px] text-gray-400 mt-1">Automatically normalized to uppercase without diacritics (NAPAS 24/7 standard).</p>
                                 <ValidationMessage For="@(() => accountForm.AccountName)" class="text-red-500 text-xs mt-1" />
                             </div>
 
@@ -224,8 +200,6 @@
     private bool isLoading = true;
     private bool isSubmitting = false;
     private bool isDeleting = false;
-    private bool isLookingUp = false;
-    private bool isAccountVerified = false;
     private bool hasExistingAccount = false;
 
     private string errorMessage = "";
@@ -332,37 +306,6 @@
         }
 
         isLoading = false;
-    }
-
-    private async Task HandleLookupAccountName()
-    {
-        if (string.IsNullOrWhiteSpace(accountForm.BankCode) || string.IsNullOrWhiteSpace(accountForm.AccountNumber))
-        {
-            errorMessage = "Please select a bank and enter the account number before verifying.";
-            return;
-        }
-
-        isLookingUp = true;
-        errorMessage = "";
-        successMessage = "";
-
-        var cleanAccount = accountForm.AccountNumber.Replace(" ", "").Replace("-", "").Trim();
-        accountForm.AccountNumber = cleanAccount;
-
-        var response = await CoachService.LookupBankAccountAsync(accountForm.BankCode, cleanAccount);
-        if (response.Success && !string.IsNullOrWhiteSpace(response.Data))
-        {
-            accountForm.AccountName = response.Data.ToUpperInvariant();
-            isAccountVerified = true;
-            successMessage = $"Verification successful: {response.Data}";
-        }
-        else
-        {
-            isAccountVerified = false;
-            errorMessage = response.Message ?? "Account information not found or lookup service is busy. You can enter the account holder name manually.";
-        }
-
-        isLookingUp = false;
     }
 
     private async Task HandleSaveAccount()
