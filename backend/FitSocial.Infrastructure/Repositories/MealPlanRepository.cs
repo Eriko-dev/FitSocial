@@ -25,6 +25,7 @@ public class MealPlanRepository : IMealPlanRepository
         return await _context.MealPlans
             .AsNoTracking()
             .Include(mp => mp.MealPlanItems.OrderBy(i => i.WeekNumber).ThenBy(i => i.DayNumber).ThenBy(i => i.SortOrder))
+                .ThenInclude(i => i.MealCompletionLogs)
             .Include(mp => mp.Coach)
                 .ThenInclude(c => c.Coach)
             .Include(mp => mp.OrderDetails)
@@ -32,6 +33,7 @@ public class MealPlanRepository : IMealPlanRepository
                     .ThenInclude(p => p!.Media)
             .Include(mp => mp.OrderDetails)
                 .ThenInclude(od => od!.Order)
+                    .ThenInclude(o => o!.Buyer)
             .Where(mp => mp.OrderDetailsId == orderDetailsId && mp.Status != "DELETED")
             .OrderByDescending(mp => mp.CreatedAt)
             .FirstOrDefaultAsync(ct);
@@ -83,5 +85,51 @@ public class MealPlanRepository : IMealPlanRepository
     public async Task AddItemAsync(MealPlanItem item, CancellationToken ct = default)
     {
         await _context.MealPlanItems.AddAsync(item, ct);
+    }
+
+    public async Task<MealPlanItem?> GetMealItemByIdAsync(Guid mealPlanItemId, CancellationToken ct = default)
+    {
+        return await _context.MealPlanItems
+            .Include(i => i.MealPlan)
+                .ThenInclude(mp => mp.Coach)
+                    .ThenInclude(c => c.Coach)
+            .Include(i => i.MealPlan)
+                .ThenInclude(mp => mp.OrderDetails)
+                    .ThenInclude(od => od!.Order)
+                        .ThenInclude(o => o!.Buyer)
+            .Include(i => i.MealPlan)
+                .ThenInclude(mp => mp.OrderDetails)
+                    .ThenInclude(od => od!.Package)
+            .FirstOrDefaultAsync(i => i.MealPlanItemId == mealPlanItemId, ct);
+    }
+
+    public async Task<MealCompletionLog?> GetMealLogAsync(Guid mealPlanItemId, Guid traineeId, CancellationToken ct = default)
+    {
+        return await _context.MealCompletionLogs
+            .FirstOrDefaultAsync(l => l.MealPlanItemId == mealPlanItemId && l.TraineeId == traineeId, ct);
+    }
+
+    public async Task AddMealLogAsync(MealCompletionLog log, CancellationToken ct = default)
+    {
+        await _context.MealCompletionLogs.AddAsync(log, ct);
+    }
+
+    public async Task<MealPlan?> GetCoachMealPlanWithLogsAsync(Guid orderDetailsId, Guid coachId, CancellationToken ct = default)
+    {
+        return await _context.MealPlans
+            .AsNoTracking()
+            .Include(mp => mp.OrderDetails)
+                .ThenInclude(od => od!.Order)
+                    .ThenInclude(o => o!.Buyer)
+            .Include(mp => mp.OrderDetails)
+                .ThenInclude(od => od!.Package)
+            .Include(mp => mp.MealPlanItems.OrderBy(i => i.WeekNumber).ThenBy(i => i.DayNumber).ThenBy(i => i.SortOrder))
+                .ThenInclude(i => i.MealCompletionLogs)
+            .Where(mp => mp.OrderDetailsId == orderDetailsId && mp.Status != "DELETED" &&
+                (mp.CoachId == coachId
+                 || (mp.OrderDetails != null && mp.OrderDetails.Order != null && mp.OrderDetails.Order.CoachId == coachId)
+                 || (mp.OrderDetails != null && mp.OrderDetails.Package != null && mp.OrderDetails.Package.CoachId == coachId)))
+            .OrderByDescending(mp => mp.CreatedAt)
+            .FirstOrDefaultAsync(ct);
     }
 }

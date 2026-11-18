@@ -337,12 +337,20 @@
 
                                 @if (pkg.MealPlanId.HasValue)
                                 {
-                                    <button type="button"
-                                            @onclick="() => OpenMealPlanModal(pkg, trainee?.FullName, isUpdate: true)"
-                                            class="w-full sm:w-auto sm:ml-auto px-3.5 py-2 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs hover:shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer flex-shrink-0">
-                                        <AppIcon Name="pencil" Size="14" />
-                                        <span>Update Meal Plan</span>
-                                    </button>
+                                    <div class="flex items-center gap-2 flex-wrap sm:ml-auto sm:flex-nowrap sm:flex-shrink-0">
+                                        <button type="button"
+                                                @onclick="() => OpenMonitorMealProgressModal(pkg, trainee?.FullName)"
+                                                class="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold rounded-xl border border-emerald-200 transition flex items-center gap-1.5 cursor-pointer flex-shrink-0">
+                                            <AppIcon Name="chart" Size="14" Class="text-emerald-600" />
+                                            <span>Monitor Meal Progress</span>
+                                        </button>
+                                        <button type="button"
+                                                @onclick="() => OpenMealPlanModal(pkg, trainee?.FullName, isUpdate: true)"
+                                                class="px-3.5 py-2 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs hover:shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer flex-shrink-0">
+                                            <AppIcon Name="pencil" Size="14" />
+                                            <span>Update Meal Plan</span>
+                                        </button>
+                                    </div>
                                 }
                                 else
                                 {
@@ -383,6 +391,14 @@
     PackageTitle="@monitorPackageTitle"
     TraineeName="@monitorTraineeName"
     OnClose="@CloseMonitorProgressModal" />
+
+<!-- Coach Monitor Trainee Meal Progress Modal -->
+<CoachMonitorMealProgressModal
+    IsOpen="@showMonitorMealProgressModal"
+    OrderDetailsId="@monitorMealOrderDetailsId"
+    PackageTitle="@monitorMealPackageTitle"
+    TraineeName="@monitorMealTraineeName"
+    OnClose="@CloseMonitorMealProgressModal" />
 
 <!-- Coach Meal Plan Form Modal -->
 <CoachMealPlanFormModal
@@ -448,6 +464,12 @@
     private Guid monitorOrderDetailsId;
     private string monitorPackageTitle = string.Empty;
     private string monitorTraineeName = string.Empty;
+
+    // Monitor Meal Progress Modal State
+    private bool showMonitorMealProgressModal = false;
+    private Guid monitorMealOrderDetailsId;
+    private string monitorMealPackageTitle = string.Empty;
+    private string monitorMealTraineeName = string.Empty;
 
     protected override void OnInitialized()
     {
@@ -546,6 +568,19 @@
     private void CloseMonitorProgressModal()
     {
         showMonitorProgressModal = false;
+    }
+
+    private void OpenMonitorMealProgressModal(CoachTraineePackageOrderDto pkg, string? name)
+    {
+        monitorMealOrderDetailsId = pkg.OrderDetailsId;
+        monitorMealPackageTitle = pkg.PackageTitle;
+        monitorMealTraineeName = name ?? "Trainee";
+        showMonitorMealProgressModal = true;
+    }
+
+    private void CloseMonitorMealProgressModal()
+    {
+        showMonitorMealProgressModal = false;
     }
 
     private void OpenTrainingPlanModal(CoachTraineePackageOrderDto pkg, string? name, bool isUpdate)

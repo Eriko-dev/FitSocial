@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using FitSocial.Domain.Entities;
@@ -13,4 +14,10 @@ public interface IMealPlanRepository
     Task AddAsync(MealPlan mealPlan, CancellationToken ct = default);
     void RemoveItems(IEnumerable<MealPlanItem> items);
     Task AddItemAsync(MealPlanItem item, CancellationToken ct = default);
+
+    // Meal Completion & Coach Review
+    Task<MealPlanItem?> GetMealItemByIdAsync(Guid mealPlanItemId, CancellationToken ct = default);
+    Task<MealCompletionLog?> GetMealLogAsync(Guid mealPlanItemId, Guid traineeId, CancellationToken ct = default);
+    Task AddMealLogAsync(MealCompletionLog log, CancellationToken ct = default);
+    Task<MealPlan?> GetCoachMealPlanWithLogsAsync(Guid orderDetailsId, Guid coachId, CancellationToken ct = default);
 }

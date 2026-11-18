@@ -58,6 +58,7 @@ public partial class FitSocialDbContext : DbContext
     public virtual DbSet<UserBlock> UserBlocks { get; set; }
     public virtual DbSet<VideoTutorial> VideoTutorials { get; set; }
     public virtual DbSet<WorkoutCompletionLog> WorkoutCompletionLogs { get; set; }
+    public virtual DbSet<MealCompletionLog> MealCompletionLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -1113,6 +1114,40 @@ public partial class FitSocialDbContext : DbContext
             entity.HasOne(d => d.MealPlan).WithMany(p => p.MealPlanItems)
                 .HasForeignKey(d => d.MealPlanId)
                 .HasConstraintName("MealPlanItem_MealPlanID_fkey");
+        });
+
+        // 35b. MealCompletionLog
+        modelBuilder.Entity<MealCompletionLog>(entity =>
+        {
+            entity.HasKey(e => e.MealCompletionLogId).HasName("MealCompletionLog_pkey");
+            entity.ToTable("MealCompletionLog");
+            entity.Property(e => e.MealCompletionLogId)
+                .HasDefaultValueSql("uuid_generate_v4()")
+                .HasColumnName("MealCompletionLogID");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnType("timestamp without time zone");
+            entity.Property(e => e.LogDate).HasColumnType("timestamp without time zone");
+            entity.Property(e => e.Notes).HasMaxLength(300);
+            entity.Property(e => e.MediaUrl).HasMaxLength(500);
+            entity.Property(e => e.CoachFeedback).HasMaxLength(500);
+            entity.Property(e => e.ReviewedBy).HasColumnName("ReviewedBy");
+            entity.Property(e => e.ReviewedAt).HasColumnType("timestamp without time zone");
+            entity.Property(e => e.Status).HasMaxLength(30);
+            entity.Property(e => e.TraineeId).HasColumnName("TraineeID");
+            entity.Property(e => e.MealPlanItemId).HasColumnName("MealPlanItemID");
+
+            entity.HasOne(d => d.Trainee).WithMany()
+                .HasForeignKey(d => d.TraineeId)
+                .HasConstraintName("MealCompletionLog_TraineeID_fkey");
+
+            entity.HasOne(d => d.ReviewedByCoach).WithMany()
+                .HasForeignKey(d => d.ReviewedBy)
+                .HasConstraintName("MealCompletionLog_ReviewedBy_fkey");
+
+            entity.HasOne(d => d.MealPlanItem).WithMany(p => p.MealCompletionLogs)
+                .HasForeignKey(d => d.MealPlanItemId)
+                .HasConstraintName("MealCompletionLog_MealPlanItemID_fkey");
         });
 
         // 36. BodyMetricLog

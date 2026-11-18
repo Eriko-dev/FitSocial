@@ -13,15 +13,21 @@ namespace FitSocial.Application.Services;
 
 public class MealPlanService : IMealPlanService
 {
+    private static readonly TimeSpan BusinessTimeZoneOffset = TimeSpan.FromHours(7);
+    public static DateTime GetBusinessToday() => DateTime.UtcNow.Add(BusinessTimeZoneOffset).Date;
+
     private readonly IMealPlanRepository _mealPlanRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly INotificationRepository? _notifications;
 
     public MealPlanService(
         IMealPlanRepository mealPlanRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        INotificationRepository? notifications = null)
     {
         _mealPlanRepository = mealPlanRepository;
         _unitOfWork = unitOfWork;
+        _notifications = notifications;
     }
 
     private static readonly HashSet<string> AllowedTraineeOrderStatuses = new(StringComparer.OrdinalIgnoreCase)
@@ -94,7 +100,14 @@ public class MealPlanService : IMealPlanService
             ValidateOrderStatusForTraineeAccess(plan.OrderDetails.Order);
         }
 
-        return MapToDto(plan);
+        var isDraftOrPending = string.Equals(plan.Status, "DRAFT", StringComparison.OrdinalIgnoreCase)
+                            || string.Equals(plan.Status, "PENDING_COACH", StringComparison.OrdinalIgnoreCase);
+        if (!isDraftOrPending)
+        {
+            await BackfillIncompleteLogsAsync(plan, traineeId, ct);
+        }
+
+        return MapToDto(plan, traineeId);
     }
 
     public async Task<TraineeMealPlanDto?> GetCoachMealPlanByOrderDetailsAsync(
@@ -504,14 +517,480 @@ public class MealPlanService : IMealPlanService
         }
     }
 
-    private static TraineeMealPlanDto MapToDto(MealPlan plan)
+    private async Task BackfillIncompleteLogsAsync(MealPlan plan, Guid traineeId, CancellationToken ct)
+    {
+        if (!plan.StartDate.HasValue || traineeId == Guid.Empty)
+        {
+            return;
+        }
+
+        var businessToday = GetBusinessToday();
+        var now = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
+        var created = false;
+
+        foreach (var item in plan.MealPlanItems ?? new List<MealPlanItem>())
+        {
+            var scheduledDate = ResolveScheduledDate(plan.StartDate, plan.EndDate, item.WeekNumber ?? 1, item.DayNumber ?? 1);
+            if (!scheduledDate.HasValue || scheduledDate.Value.Date >= businessToday)
+            {
+                continue;
+            }
+
+            var alreadyLogged = item.MealCompletionLogs?.Any(l => l.TraineeId == traineeId) == true;
+            if (alreadyLogged)
+            {
+                continue;
+            }
+
+            var newLog = new MealCompletionLog
+            {
+                MealCompletionLogId = Guid.NewGuid(),
+                TraineeId = traineeId,
+                MealPlanItemId = item.MealPlanItemId,
+                LogDate = scheduledDate.Value,
+                Status = "INCOMPLETE",
+                CreatedAt = now
+            };
+
+            await _mealPlanRepository.AddMealLogAsync(newLog, ct);
+            item.MealCompletionLogs ??= new List<MealCompletionLog>();
+            item.MealCompletionLogs.Add(newLog);
+            created = true;
+        }
+
+        if (created)
+        {
+            await _unitOfWork.SaveChangesAsync(ct);
+        }
+    }
+
+    public async Task<MealCompletionResultDto> RequestMealCompletionAsync(
+        Guid traineeId,
+        RequestMealCompletionDto dto,
+        CancellationToken ct = default)
+    {
+        if (traineeId == Guid.Empty)
+            throw new ForbiddenException("Invalid trainee identity.");
+
+        if (dto == null || dto.MealPlanItemId == Guid.Empty)
+            throw new ValidationException("MealPlanItemId is required.");
+
+        if (string.IsNullOrWhiteSpace(dto.MediaUrl))
+            throw new ValidationException("Please upload a photo of your meal before submitting for review.");
+
+        var mediaUrl = dto.MediaUrl.Trim();
+        if (mediaUrl.Length > 500)
+            throw new ValidationException("MediaUrl cannot exceed 500 characters.");
+
+        if (!string.IsNullOrWhiteSpace(dto.Notes) && dto.Notes.Length > 300)
+            throw new ValidationException("Notes cannot exceed 300 characters.");
+
+        var item = await _mealPlanRepository.GetMealItemByIdAsync(dto.MealPlanItemId, ct);
+        if (item == null)
+            throw new NotFoundException("Meal item not found.");
+
+        var orderBuyerId = item.MealPlan?.OrderDetails?.Order?.BuyerId;
+        if (orderBuyerId.HasValue && orderBuyerId.Value != traineeId)
+            throw new ForbiddenException("You are not authorized to submit completion for this meal.");
+
+        ValidateOrderStatusForTraineeAccess(item.MealPlan?.OrderDetails?.Order);
+
+        var parentPlan = item.MealPlan;
+        var businessToday = GetBusinessToday();
+        DateTime? scheduledDate = null;
+
+        if (parentPlan != null && parentPlan.StartDate.HasValue)
+        {
+            scheduledDate = ResolveScheduledDate(parentPlan.StartDate, parentPlan.EndDate, item.WeekNumber ?? 1, item.DayNumber ?? 1);
+            if (scheduledDate.HasValue && scheduledDate.Value.Date != businessToday)
+            {
+                throw new ValidationException($"You can only complete meals scheduled for today ({businessToday:dd/MM/yyyy}). This meal is scheduled for {scheduledDate.Value:dd/MM/yyyy}.");
+            }
+        }
+
+        var existingLog = await _mealPlanRepository.GetMealLogAsync(dto.MealPlanItemId, traineeId, ct);
+        var now = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
+        Guid logId;
+        var savedNotes = dto.Notes?.Trim();
+
+        if (existingLog != null)
+        {
+            if (string.Equals(existingLog.Status, "COMPLETED", StringComparison.OrdinalIgnoreCase))
+                throw new BusinessException("This meal has already been completed and approved by coach.");
+
+            existingLog.Status = "PENDING_REVIEW";
+            existingLog.MediaUrl = mediaUrl;
+            if (savedNotes != null) existingLog.Notes = savedNotes;
+            existingLog.CreatedAt = now;
+            logId = existingLog.MealCompletionLogId;
+        }
+        else
+        {
+            var newLog = new MealCompletionLog
+            {
+                MealCompletionLogId = Guid.NewGuid(),
+                TraineeId = traineeId,
+                MealPlanItemId = dto.MealPlanItemId,
+                LogDate = scheduledDate ?? now,
+                Status = "PENDING_REVIEW",
+                MediaUrl = mediaUrl,
+                Notes = savedNotes,
+                CreatedAt = now
+            };
+            await _mealPlanRepository.AddMealLogAsync(newLog, ct);
+            logId = newLog.MealCompletionLogId;
+        }
+
+        await _unitOfWork.SaveChangesAsync(ct);
+
+        if (_notifications != null && parentPlan != null && parentPlan.CoachId != Guid.Empty)
+        {
+            var traineeName = parentPlan.OrderDetails?.Order?.Buyer?.FullName ?? "Trainee";
+            var packageTitle = parentPlan.OrderDetails?.PackageTitle ?? parentPlan.OrderDetails?.Package?.Title ?? parentPlan.Title ?? "Meal Package";
+            var mealLabel = item.MealType ?? "Meal";
+
+            await _notifications.AddAsync(new Notification
+            {
+                Id = Guid.NewGuid(),
+                UserId = parentPlan.CoachId,
+                ActorId = traineeId,
+                ReferenceId = parentPlan.MealPlanId,
+                Type = "MEAL_COMPLETION_REQUESTED",
+                Description = $"Trainee {traineeName} submitted a photo proof for {mealLabel} (Week {item.WeekNumber ?? 1}, Day {item.DayNumber ?? 1}) in package \"{packageTitle}\".",
+                IsRead = false,
+                CreatedAt = DateTime.UtcNow
+            }, ct);
+
+            await _unitOfWork.SaveChangesAsync(ct);
+        }
+
+        var refreshed = parentPlan?.OrderDetailsId != null
+            ? await _mealPlanRepository.GetMealPlanByOrderDetailsAsync(parentPlan.OrderDetailsId.Value, ct)
+            : null;
+        var mapped = refreshed != null ? MapToDto(refreshed, traineeId) : null;
+
+        return new MealCompletionResultDto
+        {
+            MealPlanItemId = dto.MealPlanItemId,
+            IsCompleted = false,
+            MealCompletionLogId = logId,
+            CompletedAt = null,
+            Status = "PENDING_REVIEW",
+            Notes = savedNotes,
+            MediaUrl = mediaUrl,
+            TotalMealsCount = mapped?.TotalMealsCount ?? 0,
+            CompletedMealsCount = mapped?.CompletedMealsCount ?? 0,
+            ProgressPercentage = mapped?.ProgressPercentage ?? 0
+        };
+    }
+
+    public async Task<MealCompletionResultDto> SaveMealMissedReasonAsync(
+        Guid traineeId,
+        SaveMealMissedReasonDto dto,
+        CancellationToken ct = default)
+    {
+        if (traineeId == Guid.Empty)
+            throw new ForbiddenException("Invalid trainee identity.");
+
+        if (dto == null || dto.MealPlanItemId == Guid.Empty)
+            throw new ValidationException("MealPlanItemId is required.");
+
+        if (string.IsNullOrWhiteSpace(dto.Notes))
+            throw new ValidationException("Please enter the reason for missing this meal.");
+
+        if (dto.Notes.Trim().Length > 300)
+            throw new ValidationException("Notes cannot exceed 300 characters.");
+
+        var item = await _mealPlanRepository.GetMealItemByIdAsync(dto.MealPlanItemId, ct);
+        if (item == null)
+            throw new NotFoundException("Meal item not found.");
+
+        var orderBuyerId = item.MealPlan?.OrderDetails?.Order?.BuyerId;
+        if (orderBuyerId.HasValue && orderBuyerId.Value != traineeId)
+            throw new ForbiddenException("You are not authorized to update this meal.");
+
+        ValidateOrderStatusForTraineeAccess(item.MealPlan?.OrderDetails?.Order);
+
+        var existingLog = await _mealPlanRepository.GetMealLogAsync(dto.MealPlanItemId, traineeId, ct);
+        if (existingLog != null && string.Equals(existingLog.Status, "COMPLETED", StringComparison.OrdinalIgnoreCase))
+            throw new ValidationException("Completed meals cannot be marked incomplete.");
+
+        var now = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
+        var scheduledDate = item.MealPlan != null
+            ? ResolveScheduledDate(item.MealPlan.StartDate, item.MealPlan.EndDate, item.WeekNumber ?? 1, item.DayNumber ?? 1)
+            : null;
+        var trimmedNote = dto.Notes.Trim();
+
+        if (existingLog != null)
+        {
+            existingLog.Status = "INCOMPLETE";
+            existingLog.Notes = trimmedNote;
+        }
+        else
+        {
+            existingLog = new MealCompletionLog
+            {
+                MealCompletionLogId = Guid.NewGuid(),
+                TraineeId = traineeId,
+                MealPlanItemId = dto.MealPlanItemId,
+                LogDate = scheduledDate ?? now,
+                Status = "INCOMPLETE",
+                Notes = trimmedNote,
+                CreatedAt = now
+            };
+            await _mealPlanRepository.AddMealLogAsync(existingLog, ct);
+        }
+
+        await _unitOfWork.SaveChangesAsync(ct);
+
+        return new MealCompletionResultDto
+        {
+            MealPlanItemId = dto.MealPlanItemId,
+            IsCompleted = false,
+            MealCompletionLogId = existingLog.MealCompletionLogId,
+            Status = "INCOMPLETE",
+            Notes = existingLog.Notes
+        };
+    }
+
+    public async Task<MealCompletionResultDto> ReviewMealCompletionAsync(
+        Guid coachId,
+        CoachReviewMealDto dto,
+        CancellationToken ct = default)
+    {
+        if (coachId == Guid.Empty)
+            throw new ForbiddenException("Invalid coach identity.");
+
+        if (dto == null || dto.MealPlanItemId == Guid.Empty)
+            throw new ValidationException("MealPlanItemId is required.");
+
+        if (dto.TraineeId == Guid.Empty)
+            throw new ValidationException("TraineeId is required.");
+
+        var normalizedDecision = dto.Decision?.Trim().ToUpperInvariant();
+        if (normalizedDecision != "COMPLETED" && normalizedDecision != "UNCOMPLETE")
+            throw new ValidationException("Decision must be either 'COMPLETED' or 'UNCOMPLETE'.");
+
+        var feedback = dto.Feedback?.Trim();
+        if (normalizedDecision == "UNCOMPLETE" && string.IsNullOrWhiteSpace(feedback))
+            throw new ValidationException("Feedback is required when marking a meal as uncomplete so the trainee knows what to improve.");
+
+        if (!string.IsNullOrWhiteSpace(feedback) && feedback.Length > 500)
+            throw new ValidationException("Feedback cannot exceed 500 characters.");
+
+        var item = await _mealPlanRepository.GetMealItemByIdAsync(dto.MealPlanItemId, ct);
+        if (item == null)
+            throw new NotFoundException("Meal item not found.");
+
+        var parentPlan = item.MealPlan;
+        var isOwner = parentPlan != null && (
+            parentPlan.CoachId == coachId ||
+            parentPlan.OrderDetails?.Order?.CoachId == coachId ||
+            parentPlan.OrderDetails?.Package?.CoachId == coachId);
+        if (!isOwner || parentPlan == null)
+            throw new ForbiddenException("You are not authorized to review meals for this meal plan.");
+
+        var existingLog = await _mealPlanRepository.GetMealLogAsync(dto.MealPlanItemId, dto.TraineeId, ct);
+        var now = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Unspecified);
+
+        if (existingLog == null)
+        {
+            existingLog = new MealCompletionLog
+            {
+                MealCompletionLogId = Guid.NewGuid(),
+                TraineeId = dto.TraineeId,
+                MealPlanItemId = dto.MealPlanItemId,
+                LogDate = now,
+                Status = normalizedDecision,
+                CoachFeedback = feedback,
+                ReviewedBy = coachId,
+                ReviewedAt = now,
+                CreatedAt = now
+            };
+            await _mealPlanRepository.AddMealLogAsync(existingLog, ct);
+        }
+        else
+        {
+            existingLog.Status = normalizedDecision;
+            existingLog.CoachFeedback = feedback;
+            existingLog.ReviewedBy = coachId;
+            existingLog.ReviewedAt = now;
+        }
+
+        await _unitOfWork.SaveChangesAsync(ct);
+
+        if (_notifications != null)
+        {
+            var coachName = parentPlan.Coach?.Coach?.FullName ?? "Coach";
+            var mealLabel = item.MealType ?? "Meal";
+            var isApproved = normalizedDecision == "COMPLETED";
+
+            var notifDesc = isApproved
+                ? (string.IsNullOrWhiteSpace(feedback)
+                    ? $"Coach {coachName} approved your meal \"{mealLabel}\"."
+                    : $"Coach {coachName} approved your meal \"{mealLabel}\". Feedback: \"{feedback}\"")
+                : $"Coach {coachName} reviewed your meal \"{mealLabel}\" as incomplete. Feedback: \"{feedback}\"";
+
+            await _notifications.AddAsync(new Notification
+            {
+                Id = Guid.NewGuid(),
+                UserId = dto.TraineeId,
+                ActorId = coachId,
+                ReferenceId = parentPlan.MealPlanId,
+                Type = isApproved ? "MEAL_APPROVED" : "MEAL_REJECTED",
+                Description = notifDesc,
+                IsRead = false,
+                CreatedAt = DateTime.UtcNow
+            }, ct);
+
+            await _unitOfWork.SaveChangesAsync(ct);
+        }
+
+        var refreshed = parentPlan.OrderDetailsId != null
+            ? await _mealPlanRepository.GetMealPlanByOrderDetailsAsync(parentPlan.OrderDetailsId.Value, ct)
+            : null;
+        var mapped = refreshed != null ? MapToDto(refreshed, dto.TraineeId) : null;
+
+        return new MealCompletionResultDto
+        {
+            MealPlanItemId = dto.MealPlanItemId,
+            IsCompleted = normalizedDecision == "COMPLETED",
+            MealCompletionLogId = existingLog.MealCompletionLogId,
+            CompletedAt = normalizedDecision == "COMPLETED" ? existingLog.CreatedAt : null,
+            Status = normalizedDecision,
+            Notes = existingLog.Notes,
+            MediaUrl = existingLog.MediaUrl,
+            CoachFeedback = existingLog.CoachFeedback,
+            ReviewedAt = existingLog.ReviewedAt,
+            TotalMealsCount = mapped?.TotalMealsCount ?? 0,
+            CompletedMealsCount = mapped?.CompletedMealsCount ?? 0,
+            ProgressPercentage = mapped?.ProgressPercentage ?? 0
+        };
+    }
+
+    public async Task<CoachTraineeMealProgressDto> GetCoachTraineeMealProgressAsync(
+        Guid coachId,
+        Guid orderDetailsId,
+        CancellationToken ct = default)
+    {
+        if (coachId == Guid.Empty)
+            throw new ForbiddenException("Invalid coach identity.");
+
+        var plan = await _mealPlanRepository.GetCoachMealPlanWithLogsAsync(orderDetailsId, coachId, ct);
+        if (plan == null)
+        {
+            var od = await _mealPlanRepository.GetOrderDetailWithOrderAndPackageAsync(orderDetailsId, ct);
+            var isOwner = od != null && (
+                (od.Order != null && od.Order.CoachId == coachId) ||
+                (od.Package != null && od.Package.CoachId == coachId));
+
+            if (!isOwner || od == null)
+                throw new NotFoundException("Order detail not found or does not belong to you.");
+
+            ValidateOrderStatusForTraineeAccess(od.Order);
+
+            return new CoachTraineeMealProgressDto
+            {
+                OrderDetailsId = orderDetailsId,
+                TraineeId = od.Order?.BuyerId ?? Guid.Empty,
+                TraineeName = od.Order?.Buyer?.FullName ?? "Trainee",
+                TraineeEmail = od.Order?.Buyer?.Email ?? string.Empty,
+                PackageId = od.PackageId ?? Guid.Empty,
+                PackageTitle = od.PackageTitle ?? od.Package?.Title ?? "Meal Package",
+                PlanTitle = "No Meal Plan Created",
+                PlanStatus = "DRAFT"
+            };
+        }
+
+        ValidateOrderStatusForTraineeAccess(plan.OrderDetails?.Order);
+
+        var buyer = plan.OrderDetails?.Order?.Buyer;
+        var buyerUserId = buyer?.UserId ?? plan.OrderDetails?.Order?.BuyerId;
+
+        var isDraftOrPending = string.Equals(plan.Status, "DRAFT", StringComparison.OrdinalIgnoreCase)
+                            || string.Equals(plan.Status, "PENDING_COACH", StringComparison.OrdinalIgnoreCase);
+        if (!isDraftOrPending && buyerUserId.HasValue)
+        {
+            await BackfillIncompleteLogsAsync(plan, buyerUserId.Value, ct);
+        }
+
+        var weeks = BuildWeeksBreakdown(plan.MealPlanItems, buyerUserId, plan.StartDate, plan.EndDate, dropOutOfRange: true);
+
+        var allLogs = plan.MealPlanItems
+            .SelectMany(i => (i.MealCompletionLogs ?? new List<MealCompletionLog>())
+                .Where(l => !buyerUserId.HasValue || l.TraineeId == buyerUserId.Value)
+                .Select(l => new { Item = i, Log = l }))
+            .OrderByDescending(x => x.Log.CreatedAt)
+            .Take(50)
+            .Select(x => new CoachMealActivityLogDto
+            {
+                LogId = x.Log.MealCompletionLogId,
+                MealPlanItemId = x.Item.MealPlanItemId,
+                MealType = x.Item.MealType ?? "Meal",
+                FoodDescription = x.Item.FoodDescription ?? string.Empty,
+                WeekNumber = x.Item.WeekNumber,
+                DayNumber = x.Item.DayNumber,
+                CompletedAt = x.Log.CreatedAt ?? DateTime.UtcNow,
+                Status = x.Log.Status,
+                Notes = x.Log.Notes,
+                MediaUrl = x.Log.MediaUrl,
+                CoachFeedback = x.Log.CoachFeedback,
+                ReviewedAt = x.Log.ReviewedAt
+            })
+            .ToList();
+
+        int totalCount = weeks.Sum(w => w.TotalMeals);
+        int completedCount = weeks.Sum(w => w.CompletedMeals);
+        int missedCount = weeks.Sum(w => w.MissedMeals);
+        double adherenceRate = (completedCount + missedCount) > 0
+            ? Math.Round((double)completedCount / (completedCount + missedCount) * 100, 1)
+            : (totalCount > 0 ? 100 : 0);
+
+        return new CoachTraineeMealProgressDto
+        {
+            OrderDetailsId = orderDetailsId,
+            TraineeId = buyerUserId ?? Guid.Empty,
+            TraineeName = buyer?.FullName ?? "Trainee",
+            TraineeEmail = buyer?.Email ?? string.Empty,
+            TraineeAvatarUrl = buyer?.AvatarUrl,
+            PackageId = plan.OrderDetails?.PackageId ?? Guid.Empty,
+            PackageTitle = plan.OrderDetails?.PackageTitle ?? plan.OrderDetails?.Package?.Title ?? "Meal Package",
+            MealPlanId = plan.MealPlanId,
+            PlanTitle = plan.Title,
+            PlanStatus = plan.Status,
+            StartDate = plan.StartDate,
+            EndDate = plan.EndDate,
+            TotalMealsCount = totalCount,
+            CompletedMealsCount = completedCount,
+            MissedMealsCount = missedCount,
+            AdherenceRate = adherenceRate,
+            Weeks = weeks,
+            RecentLogs = allLogs
+        };
+    }
+
+    private static TraineeMealPlanDto MapToDto(MealPlan plan, Guid? filterTraineeId = null)
     {
         var thumbnailUrl = plan.OrderDetails?.Package?.Media?
             .OrderBy(m => m.SortOrder)
             .Select(m => m.MediaUrl)
             .FirstOrDefault();
 
-        var dto = new TraineeMealPlanDto
+        var weeks = BuildWeeksBreakdown(
+            plan.MealPlanItems,
+            filterTraineeId,
+            plan.StartDate,
+            plan.EndDate,
+            dropOutOfRange: filterTraineeId.HasValue);
+
+        int totalCount = weeks.Sum(w => w.TotalMeals);
+        int completedCount = weeks.Sum(w => w.CompletedMeals);
+        int missedCount = weeks.Sum(w => w.MissedMeals);
+        double adherenceRate = (completedCount + missedCount) > 0
+            ? Math.Round((double)completedCount / (completedCount + missedCount) * 100, 1)
+            : (totalCount > 0 ? 100 : 0);
+
+        return new TraineeMealPlanDto
         {
             MealPlanId = plan.MealPlanId,
             OrderDetailsId = plan.OrderDetailsId ?? Guid.Empty,
@@ -529,9 +1008,25 @@ public class MealPlanService : IMealPlanService
             Status = plan.Status,
             StartDate = plan.StartDate,
             EndDate = plan.EndDate,
+            TotalMealsCount = totalCount,
+            CompletedMealsCount = completedCount,
+            MissedMealsCount = missedCount,
+            AdherenceRate = adherenceRate,
+            Weeks = weeks
         };
+    }
 
-        var grouped = plan.MealPlanItems
+    private static List<MealPlanWeekDto> BuildWeeksBreakdown(
+        IEnumerable<MealPlanItem> items,
+        Guid? filterTraineeId,
+        DateTime? planStartDate,
+        DateTime? planEndDate,
+        bool dropOutOfRange)
+    {
+        var businessToday = GetBusinessToday();
+        var weeks = new List<MealPlanWeekDto>();
+
+        var grouped = items
             .GroupBy(i => i.WeekNumber ?? 1)
             .OrderBy(g => g.Key);
 
@@ -545,24 +1040,86 @@ public class MealPlanService : IMealPlanService
 
             foreach (var dayGroup in dayGroups)
             {
-                var dayDto = new MealPlanDayDto { DayNumber = dayGroup.Key };
-                dayDto.Items.AddRange(dayGroup.Select(i => new MealPlanItemDto
-                {
-                    MealPlanItemId = i.MealPlanItemId,
-                    WeekNumber = i.WeekNumber,
-                    DayNumber = i.DayNumber,
-                    MealType = i.MealType,
-                    FoodDescription = i.FoodDescription,
-                    Calories = i.Calories,
-                    SortOrder = i.SortOrder,
-                }).OrderBy(i => i.SortOrder));
+                var scheduledDate = ResolveScheduledDate(planStartDate, planEndDate, weekGroup.Key, dayGroup.Key);
+                var hasSchedule = planStartDate.HasValue;
 
-                weekDto.Days.Add(dayDto);
+                if (dropOutOfRange && hasSchedule && !scheduledDate.HasValue)
+                {
+                    continue;
+                }
+
+                var dayDto = new MealPlanDayDto
+                {
+                    DayNumber = dayGroup.Key,
+                    ScheduledDate = scheduledDate,
+                    IsToday = !hasSchedule || (scheduledDate.HasValue && scheduledDate.Value.Date == businessToday)
+                };
+
+                foreach (var i in dayGroup.OrderBy(x => x.SortOrder))
+                {
+                    MealCompletionLog? relevantLog = null;
+                    if (i.MealCompletionLogs != null && i.MealCompletionLogs.Count > 0)
+                    {
+                        var mine = i.MealCompletionLogs
+                            .Where(l => !filterTraineeId.HasValue || l.TraineeId == filterTraineeId.Value)
+                            .ToList();
+
+                        relevantLog = mine.FirstOrDefault(l => string.Equals(l.Status, "COMPLETED", StringComparison.OrdinalIgnoreCase))
+                                      ?? mine.OrderByDescending(l => l.CreatedAt).FirstOrDefault();
+                    }
+
+                    var isCompleted = string.Equals(relevantLog?.Status, "COMPLETED", StringComparison.OrdinalIgnoreCase);
+
+                    dayDto.Items.Add(new MealPlanItemDto
+                    {
+                        MealPlanItemId = i.MealPlanItemId,
+                        WeekNumber = i.WeekNumber,
+                        DayNumber = i.DayNumber,
+                        MealType = i.MealType,
+                        FoodDescription = i.FoodDescription,
+                        Calories = i.Calories,
+                        SortOrder = i.SortOrder,
+                        IsCompleted = isCompleted,
+                        MealCompletionLogId = relevantLog?.MealCompletionLogId,
+                        CompletedAt = relevantLog?.CreatedAt,
+                        TraineeNotes = relevantLog?.Notes,
+                        MediaUrl = relevantLog?.MediaUrl,
+                        CoachFeedback = relevantLog?.CoachFeedback,
+                        ReviewedAt = relevantLog?.ReviewedAt,
+                        Status = relevantLog?.Status,
+                        ScheduledDate = scheduledDate
+                    });
+                }
+
+                if (dayDto.Items.Count > 0)
+                {
+                    weekDto.Days.Add(dayDto);
+                }
             }
 
-            dto.Weeks.Add(weekDto);
+            if (weekDto.Days.Count > 0)
+            {
+                weeks.Add(weekDto);
+            }
         }
 
-        return dto;
+        return weeks;
+    }
+
+    private static DateTime? ResolveScheduledDate(DateTime? planStartDate, DateTime? planEndDate, short weekNumber, short dayNumber)
+    {
+        if (!planStartDate.HasValue)
+        {
+            return null;
+        }
+
+        var date = GetSessionDate(planStartDate.Value.Date, weekNumber, dayNumber);
+
+        if (planEndDate.HasValue && date.Date > planEndDate.Value.Date)
+        {
+            return null;
+        }
+
+        return date;
     }
 }

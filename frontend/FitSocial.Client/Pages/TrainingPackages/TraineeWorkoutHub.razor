@@ -567,7 +567,7 @@
                 <div class="p-5 flex flex-col gap-4 text-xs">
                     <!-- File Upload -->
                     <div>
-                        <label class="font-bold text-gray-700 block mb-1">Workout Photo or Video Proof:</label>
+                        <label class="font-bold text-gray-700 block mb-1">Workout Photo or Video Proof: <span class="text-red-500">*</span></label>
                         <InputFile OnChange="HandleProofFileUpload" accept="image/*,video/*" class="w-full text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-orange-50 file:text-[#FF5500] hover:file:bg-orange-100 cursor-pointer" />
                         @if (isUploadingProof)
                         {
@@ -578,20 +578,14 @@
                         }
                         else if (!string.IsNullOrWhiteSpace(proofMediaUrl))
                         {
-                            <div class="mt-2 p-2 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-emerald-800">
+                            <div class="mt-2 p-2 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-emerald-800 gap-2">
                                 <span class="truncate max-w-xs font-medium">✓ Proof media attached</span>
-                                <a href="@proofMediaUrl" target="_blank" rel="noopener noreferrer" class="text-blue-600 font-bold underline">View</a>
+                                <div class="flex items-center gap-3 flex-shrink-0">
+                                    <a href="@proofMediaUrl" target="_blank" rel="noopener noreferrer" class="text-blue-600 font-bold underline">View</a>
+                                    <button type="button" @onclick="() => proofMediaUrl = null" class="text-rose-600 hover:text-rose-700 font-bold cursor-pointer">Remove</button>
+                                </div>
                             </div>
                         }
-                    </div>
-
-                    <!-- Or manual URL -->
-                    <div>
-                        <label class="font-semibold text-gray-500 block mb-1">Or paste video / image URL:</label>
-                        <input type="text"
-                               @bind="proofMediaUrl"
-                               placeholder="https://..."
-                               class="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-[#FF5500]" />
                     </div>
 
                     <!-- Notes -->
@@ -716,10 +710,20 @@
             workoutPlan = res.Data;
             if (workoutPlan.Weeks.Any())
             {
-                selectedWeekNumber = workoutPlan.Weeks.First().WeekNumber;
-                if (workoutPlan.Weeks.First().Days.Any())
+                var todayWeek = workoutPlan.Weeks.FirstOrDefault(w => w.Days.Any(d => d.IsToday));
+                var todayDay = todayWeek?.Days.FirstOrDefault(d => d.IsToday);
+                if (todayWeek != null && todayDay != null)
                 {
-                    selectedDayNumber = workoutPlan.Weeks.First().Days.First().DayNumber;
+                    selectedWeekNumber = todayWeek.WeekNumber;
+                    selectedDayNumber = todayDay.DayNumber;
+                }
+                else
+                {
+                    selectedWeekNumber = workoutPlan.Weeks.First().WeekNumber;
+                    if (workoutPlan.Weeks.First().Days.Any())
+                    {
+                        selectedDayNumber = workoutPlan.Weeks.First().Days.First().DayNumber;
+                    }
                 }
             }
         }
@@ -905,7 +909,8 @@
     {
         submittingExercise = ex;
         proofMediaUrl = ex.MediaUrl;
-        proofNotes = GetExerciseNote(ex.TrainingPlanExerciseId) ?? ex.TraineeNotes;
+        var inlineNote = GetExerciseNote(ex.TrainingPlanExerciseId);
+        proofNotes = string.IsNullOrWhiteSpace(inlineNote) ? ex.TraineeNotes : inlineNote;
         showProofModal = true;
     }
 
