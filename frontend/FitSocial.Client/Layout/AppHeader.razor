@@ -702,6 +702,12 @@
             return;
         }
 
+        if (item.Type == "POST_COMMENT" || item.Type == "COMMENT_REPLY")
+        {
+            Navigation.NavigateTo("home");
+            return;
+        }
+
         Navigation.NavigateTo("notifications");
     }
 
@@ -733,6 +739,8 @@
             "USER_WARNED" => "Account Warning",
             "USER_LOCKED" => "Account Locked",
             "REPORT_PROCESSED" => "Report Processed",
+            "POST_COMMENT" => "Post Comment",
+            "COMMENT_REPLY" => "Comment Reply",
             _ => type.Replace("_", " ")
         };
     }
