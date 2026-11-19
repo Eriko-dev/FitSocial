@@ -392,6 +392,16 @@ public class PostService : IPostService
             throw;
         }
 
+        // 9.1. Set user recent created post in cache so feed prioritizes it for the author
+        try
+        {
+            _posts.SetUserRecentCreatedPost(authorId, post.Id);
+        }
+        catch
+        {
+            // Non-critical cache error should not fail creation
+        }
+
         // 10. Return response DTO
         var resultDto = new PostDto
         {
@@ -489,6 +499,40 @@ public class PostService : IPostService
         Task<(List<Post> Items, int TotalCount)> pagedTask;
         if (!string.IsNullOrWhiteSpace(query.SessionId))
         {
+            if (query.PrioritizedPostId.HasValue)
+            {
+                pagedTask = _posts.GetPagedPostsAsync(
+                    normalizedPostType,
+                    query.LocationId,
+                    query.AuthorId,
+                    query.EffectiveKeyword,
+                    query.PageNumber,
+                    query.PageSize,
+                    query.SortBy ?? "hot",
+                    query.AsOf,
+                    query.SessionId,
+                    currentUserId,
+                    query.PrioritizedPostId,
+                    cancellationToken);
+            }
+            else
+            {
+                pagedTask = _posts.GetPagedPostsAsync(
+                    normalizedPostType,
+                    query.LocationId,
+                    query.AuthorId,
+                    query.EffectiveKeyword,
+                    query.PageNumber,
+                    query.PageSize,
+                    query.SortBy ?? "hot",
+                    query.AsOf,
+                    query.SessionId,
+                    currentUserId,
+                    cancellationToken);
+            }
+        }
+        else if (query.PrioritizedPostId.HasValue)
+        {
             pagedTask = _posts.GetPagedPostsAsync(
                 normalizedPostType,
                 query.LocationId,
@@ -498,8 +542,9 @@ public class PostService : IPostService
                 query.PageSize,
                 query.SortBy ?? "hot",
                 query.AsOf,
-                query.SessionId,
+                null,
                 currentUserId,
+                query.PrioritizedPostId,
                 cancellationToken);
         }
         else if (query.AsOf.HasValue || (!string.IsNullOrWhiteSpace(query.SortBy) && !string.Equals(query.SortBy, "hot", StringComparison.OrdinalIgnoreCase)))

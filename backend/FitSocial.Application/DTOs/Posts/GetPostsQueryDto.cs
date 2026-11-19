@@ -34,6 +34,11 @@ public class GetPostsQueryDto
     public string? SessionId { get; set; }
 
     /// <summary>
+    /// Optional post ID to prioritize at the head of the feed for the post's author.
+    /// </summary>
+    public Guid? PrioritizedPostId { get; set; }
+
+    /// <summary>
     /// Returns the effective trimmed keyword if provided, otherwise null.
     /// </summary>
     public string? EffectiveKeyword =>
