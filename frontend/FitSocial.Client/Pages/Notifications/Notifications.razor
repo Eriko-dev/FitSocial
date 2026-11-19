@@ -472,6 +472,12 @@
             return;
         }
 
+        if (item.Type == "POST_COMMENT" || item.Type == "COMMENT_REPLY")
+        {
+            Navigation.NavigateTo("home");
+            return;
+        }
+
         if (item.ConversationId != Guid.Empty)
         {
             Navigation.NavigateTo($"messages/{item.ConversationId}");
@@ -532,6 +538,8 @@
         return type switch
         {
             "NewMessage" or "NEW_MESSAGE" => "Message",
+            "POST_COMMENT" => "Post Comment",
+            "COMMENT_REPLY" => "Comment Reply",
             "RefundApproved" => "Refund Approved",
             "RefundRejected" => "Refund Rejected",
             "RefundRequested" => "Refund",

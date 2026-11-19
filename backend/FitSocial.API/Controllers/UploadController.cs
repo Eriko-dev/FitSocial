@@ -15,7 +15,8 @@ public class UploadController : ControllerBase
     private static readonly string[] AllowedVideoExtensions = { ".mp4", ".mov", ".avi", ".mkv", ".webm" };
     private static readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".webp", ".gif", ".mp4", ".mov", ".avi", ".mkv", ".webm", ".pdf" };
     private const long MaxImageBytes = 10 * 1024 * 1024; // 10MB
-    private const long MaxVideoBytes = 100 * 1024 * 1024; // 100MB
+    private const long MaxVideoBytes = 100 * 1024 * 1024; // 100MB per video
+    private const long MaxTotalPostMediaBytes = 250 * 1024 * 1024; // 250MB total per post
     private const long MaxFileBytes = 10 * 1024 * 1024; // 10MB (credentials / PDF)
 
     private readonly IConfiguration _configuration;
@@ -214,12 +215,13 @@ public class UploadController : ControllerBase
     }
 
     /// <summary>
-    /// Upload media for a post (max 10 files, accepts both images and videos).
+    /// Upload media for a post (max 10 files, accepts both images and videos; max 100MB per video, max 250MB total).
     /// Returns a list of { mediaUrl, mediaType } to supply to the create post endpoint.
     /// </summary>
     [HttpPost("post-media")]
     [AllowAnonymous]
-    [RequestSizeLimit(100 * 1024 * 1024)]
+    [RequestSizeLimit(250 * 1024 * 1024)]
+    [RequestFormLimits(MultipartBodyLengthLimit = 250 * 1024 * 1024)]
     [ProducesResponseType(typeof(ApiResponseDto<List<FitSocial.Application.DTOs.Posts.CreatePostMediaDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponseDto<List<FitSocial.Application.DTOs.Posts.CreatePostMediaDto>>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UploadPostMedia([FromForm] List<IFormFile>? files, CancellationToken cancellationToken)
@@ -239,6 +241,12 @@ public class UploadController : ControllerBase
         long totalIncomingBytes = files.Sum(f => f.Length);
         _logger.LogInformation("[API][UploadPostMedia] Received {Count} files, total size: {SizeMb:F2} MB",
             files.Count, totalIncomingBytes / (1024.0 * 1024.0));
+
+        if (totalIncomingBytes > MaxTotalPostMediaBytes)
+        {
+            return BadRequest(ApiResponseDto<List<FitSocial.Application.DTOs.Posts.CreatePostMediaDto>>.Fail(
+                $"Total size of all media files exceeds the maximum allowed limit of 250MB (actual: {totalIncomingBytes / (1024.0 * 1024.0):F1}MB)."));
+        }
 
         var cloudName = _configuration["Cloudinary:CloudName"];
         var apiKey = _configuration["Cloudinary:ApiKey"];
