@@ -74,6 +74,11 @@ public class PostService : IPostService
             queryParams.Add($"sessionId={Uri.EscapeDataString(query.SessionId.Trim())}");
         }
 
+        if (query.PrioritizedPostId.HasValue && query.PrioritizedPostId.Value != Guid.Empty)
+        {
+            queryParams.Add($"prioritizedPostId={query.PrioritizedPostId.Value}");
+        }
+
         var url = $"posts?{string.Join("&", queryParams)}";
         var response = await _apiClient.GetAsync<PagedResult<PostDto>>(url);
 

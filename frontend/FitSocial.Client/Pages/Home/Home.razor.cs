@@ -320,7 +320,7 @@ public partial class Home : ComponentBase, IAsyncDisposable
             // Graceful fallback
         }
     }
-    private async Task LoadPostsAsync(bool append = false)
+    private async Task LoadPostsAsync(bool append = false, bool showSkeleton = true)
     {
         if (!currentUserId.HasValue || currentUserId.Value == Guid.Empty)
         {
@@ -333,7 +333,10 @@ public partial class Home : ComponentBase, IAsyncDisposable
 
         if (!append)
         {
-            isLoading = true;
+            if (showSkeleton)
+            {
+                isLoading = true;
+            }
             isLoadingMore = false;
             isPrefetching = false;
             _hasRecoveredFromExpiredSession = false;
@@ -668,9 +671,63 @@ public partial class Home : ComponentBase, IAsyncDisposable
         createPostInitialType = null;
         ShowSuccessToast("Post published successfully!");
 
-        // Refresh Feed Session so the newly created post is queried from DB,
-        // ranked according to HotScore, and snapshot pagination remains completely consistent.
-        await LoadPostsAsync(append: false);
+        // If search or filter is active and does not match the new post, reset search/filters
+        // so that the newly created post is visible at the top of the feed
+        bool matchesSearch = string.IsNullOrWhiteSpace(appliedSearchTerm) ||
+            (newPost.Content?.Contains(appliedSearchTerm, StringComparison.OrdinalIgnoreCase) ?? false);
+        bool matchesType = string.IsNullOrWhiteSpace(appliedPostType) ||
+            string.Equals(NormalizePostType(newPost.PostType), NormalizePostType(appliedPostType), StringComparison.OrdinalIgnoreCase);
+        bool matchesLocation = !appliedLocationId.HasValue || appliedLocationId == Guid.Empty ||
+            newPost.LocationId == appliedLocationId.Value;
+
+        if (!matchesSearch || !matchesType || !matchesLocation)
+        {
+            searchInput = string.Empty;
+            Shell.SearchTerm = string.Empty;
+            appliedSearchTerm = null;
+            draftPostType = null;
+            appliedPostType = null;
+            draftLocationId = null;
+            appliedLocationId = null;
+            _lastAppliedUrlSearch = null;
+            _lastAppliedUrlPostType = null;
+            _lastAppliedUrlLocationId = null;
+            UpdateHeaderSearchExtra();
+
+            // Synchronize browser URL by removing search & filter query parameters while preserving any unrelated query parameters
+            try
+            {
+                var newUri = Navigation.GetUriWithQueryParameters(new Dictionary<string, object?>
+                {
+                    ["search"] = null,
+                    ["searchTerm"] = null,
+                    ["postType"] = null,
+                    ["locationId"] = null
+                });
+                Navigation.NavigateTo(newUri, replace: true);
+            }
+            catch
+            {
+                Navigation.NavigateTo("home", replace: true);
+            }
+        }
+
+        // Set PrioritizedPostId so backend snapshot places newPost at index 0 of Page 1
+        currentQuery.PrioritizedPostId = newPost.Id;
+
+        // Optimistically prepend new post to feed for instant visual response without skeleton flash
+        posts ??= new List<PostDto>();
+        posts.RemoveAll(p => p.Id == newPost.Id);
+        posts.Insert(0, newPost);
+        loadedPostIds.Add(newPost.Id);
+        totalCount++;
+        StateHasChanged();
+
+        // Refresh feed session: backend will place newPost at index 0 of snapshot.PostIds,
+        // guaranteeing consistent pagination and infinite scroll across all pages.
+        await LoadPostsAsync(append: false, showSkeleton: false);
+
+        currentQuery.PrioritizedPostId = null;
     }
 
     // Search Handlers

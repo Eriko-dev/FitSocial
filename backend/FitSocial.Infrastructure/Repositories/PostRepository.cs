@@ -46,6 +46,13 @@ public class PostRepository : Repository<Post>, IPostRepository
         DbContext.PostMedia.RemoveRange(mediaItems);
     }
 
+    public void SetUserRecentCreatedPost(Guid userId, Guid postId)
+    {
+        if (userId == Guid.Empty || postId == Guid.Empty) return;
+        var recentKey = $"user_recent_created_post_{userId}";
+        _memoryCache?.Set(recentKey, postId, TimeSpan.FromMinutes(15));
+    }
+
     public Task<(List<Post> Items, int TotalCount)> GetPagedPostsAsync(
         string? postType,
         Guid? locationId,
@@ -55,7 +62,7 @@ public class PostRepository : Repository<Post>, IPostRepository
         int pageSize,
         CancellationToken cancellationToken = default)
     {
-        return GetPagedPostsAsync(postType, locationId, authorId, searchTerm, pageNumber, pageSize, "hot", null, null, null, cancellationToken);
+        return GetPagedPostsAsync(postType, locationId, authorId, searchTerm, pageNumber, pageSize, "hot", null, null, null, null, cancellationToken);
     }
 
     public Task<(List<Post> Items, int TotalCount)> GetPagedPostsAsync(
@@ -69,7 +76,23 @@ public class PostRepository : Repository<Post>, IPostRepository
         DateTime? asOf,
         CancellationToken cancellationToken = default)
     {
-        return GetPagedPostsAsync(postType, locationId, authorId, searchTerm, pageNumber, pageSize, sortBy, asOf, null, null, cancellationToken);
+        return GetPagedPostsAsync(postType, locationId, authorId, searchTerm, pageNumber, pageSize, sortBy, asOf, null, null, null, cancellationToken);
+    }
+
+    public Task<(List<Post> Items, int TotalCount)> GetPagedPostsAsync(
+        string? postType,
+        Guid? locationId,
+        Guid? authorId,
+        string? searchTerm,
+        int pageNumber,
+        int pageSize,
+        string? sortBy,
+        DateTime? asOf,
+        string? sessionId,
+        Guid? currentUserId = null,
+        CancellationToken cancellationToken = default)
+    {
+        return GetPagedPostsAsync(postType, locationId, authorId, searchTerm, pageNumber, pageSize, sortBy, asOf, sessionId, currentUserId, null, cancellationToken);
     }
 
     public async Task<(List<Post> Items, int TotalCount)> GetPagedPostsAsync(
@@ -82,7 +105,8 @@ public class PostRepository : Repository<Post>, IPostRepository
         string? sortBy,
         DateTime? asOf,
         string? sessionId,
-        Guid? currentUserId = null,
+        Guid? currentUserId,
+        Guid? prioritizedPostId,
         CancellationToken cancellationToken = default)
     {
         var query = DbSet.AsNoTracking();
@@ -140,6 +164,21 @@ public class PostRepository : Repository<Post>, IPostRepository
         // Feed Session Snapshot Ranking:
         // When sessionId is provided, freeze the ranking for the session
         // so real-time interaction changes (likes/comments) do not shift posts between pages.
+        Guid? effectivePrioritizedPostId = null;
+        if (currentUserId.HasValue && currentUserId.Value != Guid.Empty && _memoryCache != null)
+        {
+            var recentKey = $"user_recent_created_post_{currentUserId.Value}";
+            if (_memoryCache.TryGetValue(recentKey, out Guid cachedRecentPostId) && cachedRecentPostId != Guid.Empty)
+            {
+                // If caller supplied a prioritizedPostId, it must match the backend's recent-created-post cache.
+                // Do not trust the frontend-provided ID as the sole authorization or prioritization mechanism.
+                if (!prioritizedPostId.HasValue || prioritizedPostId.Value == cachedRecentPostId)
+                {
+                    effectivePrioritizedPostId = cachedRecentPostId;
+                }
+            }
+        }
+
         if (!string.IsNullOrWhiteSpace(sessionId))
         {
             if (_memoryCache == null)
@@ -194,6 +233,48 @@ public class PostRepository : Repository<Post>, IPostRepository
                     .Select(p => p.Id)
                     .Take(1000) // Cache safety cap
                     .ToListAsync(cancellationToken);
+
+                if (effectivePrioritizedPostId.HasValue && effectivePrioritizedPostId.Value != Guid.Empty)
+                {
+                    var targetId = effectivePrioritizedPostId.Value;
+                    var fifteenMinutesAgo = (asOf ?? DateTime.UtcNow).AddMinutes(-15);
+                    var candidate = await DbSet.AsNoTracking()
+                        .Where(p => p.Id == targetId &&
+                                    (p.IsDeleted == null || p.IsDeleted == false) &&
+                                    p.AuthorId == validUserId &&
+                                    p.CreatedAt != null &&
+                                    p.CreatedAt >= fifteenMinutesAgo)
+                        .Select(p => new
+                        {
+                            p.Id,
+                            p.PostType,
+                            p.LocationId,
+                            p.AuthorId,
+                            p.Content
+                        })
+                        .FirstOrDefaultAsync(cancellationToken);
+
+                    if (candidate != null)
+                    {
+                        bool matchesType = string.IsNullOrWhiteSpace(normalizedType) ||
+                            string.Equals(candidate.PostType?.Trim(), normalizedType, StringComparison.OrdinalIgnoreCase);
+
+                        bool matchesLoc = !locationId.HasValue || locationId.Value == Guid.Empty ||
+                            candidate.LocationId == locationId.Value;
+
+                        bool matchesAuthor = !authorId.HasValue || authorId.Value == Guid.Empty ||
+                            candidate.AuthorId == authorId.Value;
+
+                        bool matchesSearch = string.IsNullOrWhiteSpace(searchTerm) ||
+                            (candidate.Content != null && candidate.Content.Contains(searchTerm.Trim(), StringComparison.OrdinalIgnoreCase));
+
+                        if (matchesType && matchesLoc && matchesAuthor && matchesSearch)
+                        {
+                            postIds.Remove(candidate.Id);
+                            postIds.Insert(0, candidate.Id);
+                        }
+                    }
+                }
 
                 snapshot = new FeedSessionSnapshot
                 {
@@ -261,6 +342,65 @@ public class PostRepository : Repository<Post>, IPostRepository
             .Include(p => p.Comments)
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
+
+        if (pageNumber == 1 && currentUserId.HasValue && effectivePrioritizedPostId.HasValue && effectivePrioritizedPostId.Value != Guid.Empty)
+        {
+            var targetId = effectivePrioritizedPostId.Value;
+            var fifteenMinutesAgo = (asOf ?? DateTime.UtcNow).AddMinutes(-15);
+            var existingIndex = items.FindIndex(p => p.Id == targetId);
+            if (existingIndex > 0)
+            {
+                var targetPost = items[existingIndex];
+                if (targetPost.AuthorId == currentUserId.Value &&
+                    targetPost.CreatedAt != null &&
+                    targetPost.CreatedAt >= fifteenMinutesAgo &&
+                    (targetPost.IsDeleted == null || targetPost.IsDeleted == false))
+                {
+                    items.RemoveAt(existingIndex);
+                    items.Insert(0, targetPost);
+                }
+            }
+            else if (existingIndex < 0)
+            {
+                var candidate = await DbSet.AsNoTracking()
+                    .Where(p => p.Id == targetId &&
+                                (p.IsDeleted == null || p.IsDeleted == false) &&
+                                p.AuthorId == currentUserId.Value &&
+                                p.CreatedAt != null &&
+                                p.CreatedAt >= fifteenMinutesAgo)
+                    .Include(p => p.Author)
+                    .Include(p => p.Location)
+                    .Include(p => p.PostMedia)
+                    .Include(p => p.PostInteractions)
+                    .Include(p => p.Comments)
+                    .AsSplitQuery()
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                if (candidate != null)
+                {
+                    bool matchesType = string.IsNullOrWhiteSpace(normalizedType) ||
+                        string.Equals(candidate.PostType?.Trim(), normalizedType, StringComparison.OrdinalIgnoreCase);
+
+                    bool matchesLoc = !locationId.HasValue || locationId.Value == Guid.Empty ||
+                        candidate.LocationId == locationId.Value;
+
+                    bool matchesAuthor = !authorId.HasValue || authorId.Value == Guid.Empty ||
+                        candidate.AuthorId == authorId.Value;
+
+                    bool matchesSearch = string.IsNullOrWhiteSpace(searchTerm) ||
+                        (candidate.Content != null && candidate.Content.Contains(searchTerm.Trim(), StringComparison.OrdinalIgnoreCase));
+
+                    if (matchesType && matchesLoc && matchesAuthor && matchesSearch)
+                    {
+                        items.Insert(0, candidate);
+                        if (items.Count > pageSize)
+                        {
+                            items.RemoveAt(items.Count - 1);
+                        }
+                    }
+                }
+            }
+        }
 
         return (items, unCachedTotalCount);
     }
