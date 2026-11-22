@@ -7,6 +7,7 @@ public class EkycRequest
     public string? FaceImageUrl { get; set; }
     public string? FaceImageLeftUrl { get; set; }
     public string? FaceImageRightUrl { get; set; }
+    public string? Email { get; set; }
 }
 
 public class EkycResult

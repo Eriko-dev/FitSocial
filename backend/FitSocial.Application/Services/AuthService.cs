@@ -434,7 +434,8 @@ public class AuthService : IAuthService
             FaceImageLeftUrl = request.FaceImageLeftUrl,
             FaceImageRightUrl = request.FaceImageRightUrl,
             FaceImageTopUrl = request.FaceImageTopUrl,
-            FaceImageBottomUrl = request.FaceImageBottomUrl
+            FaceImageBottomUrl = request.FaceImageBottomUrl,
+            Email = normalizedEmail
         });
         var ekycOk = ekycResult.Success;
         if (!ekycOk)

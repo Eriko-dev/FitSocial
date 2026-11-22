@@ -11,4 +11,10 @@ public class EkycVerificationDto
     public string? FaceImageRightUrl { get; set; }
     public string? FaceImageTopUrl { get; set; }
     public string? FaceImageBottomUrl { get; set; }
+
+    /// <summary>Email của người đăng ký (dùng để kiểm tra trùng CCCD theo user).</summary>
+    public string? Email { get; set; }
+
+    /// <summary>UserId hiện tại (nếu có) để loại trừ khi kiểm tra trùng CCCD.</summary>
+    public Guid? UserId { get; set; }
 }

@@ -237,7 +237,7 @@ else if (coachStep == 4)
 
     <label class="terms" style="margin-top:8px;"><input type="checkbox" @bind="agreedTerms" /><span>I agree to the <a href="" @onclick:preventDefault>Terms of Service</a> and <a href="" @onclick:preventDefault>Privacy Policy</a> (@(latestTerm?.Version ?? "v1.0"))</span></label>
     @if (latestTerm != null) { <details class="terms-box"><summary>@latestTerm.Title</summary><div class="terms-content">@latestTerm.Content</div></details> }
-    @if (showTermsError && !agreedTerms) { <div class="field-error">Please agree to the terms.</div> }
+    @if (showTermsError && !agreedTerms) { <div class="auth-alert error" style="font-size:0.8rem; margin-top:10px;"><AppIcon Name="warning" /><span>Please agree to the terms.</span></div> }
 
     <div style="border:2px solid #FF5500; background:#fff7f3; border-radius:8px; padding:12px; text-align:center; font-weight:800; margin-top:12px; color:#1e293b;">
         Total Payment: @previewAmount VND
@@ -425,7 +425,7 @@ else if (coachStep == 5)
         if (string.IsNullOrWhiteSpace(coachModel.FrontCardUrl) || string.IsNullOrWhiteSpace(coachModel.BackCardUrl)) { ekycError = "Please upload both front and back of your ID card."; return; }
         if (string.IsNullOrWhiteSpace(coachModel.FaceImageUrl)) { ekycError = "Please capture your live face image."; return; }
         isVerifyingEkyc = true;
-        var res = await EkycService.VerifyAsync(new EkycRequest { FrontCardUrl = coachModel.FrontCardUrl, BackCardUrl = coachModel.BackCardUrl, FaceImageUrl = coachModel.FaceImageUrl, FaceImageLeftUrl = coachModel.FaceImageLeftUrl, FaceImageRightUrl = coachModel.FaceImageRightUrl });
+        var res = await EkycService.VerifyAsync(new EkycRequest { FrontCardUrl = coachModel.FrontCardUrl, BackCardUrl = coachModel.BackCardUrl, FaceImageUrl = coachModel.FaceImageUrl, FaceImageLeftUrl = coachModel.FaceImageLeftUrl, FaceImageRightUrl = coachModel.FaceImageRightUrl, Email = coachModel.Email });
         if (!res.Success)
         {
             isVerifyingEkyc = false;
@@ -478,7 +478,7 @@ else if (coachStep == 5)
             return;
         }
         if (coachModel.CoachSubscriptionPlansId == null || coachModel.CoachSubscriptionPlansId == Guid.Empty) { errorMessage = "Please select a subscription plan."; return; }
-        if (!agreedTerms) { errorMessage = "Please agree to the Terms of Service and Privacy Policy."; return; }
+        if (!agreedTerms) { return; }
         if (latestTerm == null)
         {
             try { latestTerm = await TermsService.GetLatestAsync(); } catch { }
