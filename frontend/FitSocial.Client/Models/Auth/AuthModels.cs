@@ -10,7 +10,7 @@ public class SendOtpRequest
     public string? Purpose { get; set; } = "REGISTER_TRAINEE";
 }
 
-public class RegisterRequest
+public class RegisterTraineeRequest
 {
     [Required(ErrorMessage = "Please enter your full name")]
     [StringLength(100, MinimumLength = 2, ErrorMessage = "Name must be 2 to 100 characters")]
@@ -36,25 +36,19 @@ public class RegisterRequest
     public string? PhoneNumber { get; set; }
     public string? Gender { get; set; }
     public DateOnly? DateOfBirth { get; set; }
+    public Guid? TermId { get; set; }
+}
+
+public class RegisterCoachRequest : RegisterTraineeRequest
+{
     public int? ExperienceYears { get; set; }
     public string? Biography { get; set; }
-    public string? CertificateUrl { get; set; }
-    public string? IdentityCardUrl { get; set; }
-    // --- Coach 5-step flow per FitConnect spec: (1) Account -> (2) CCCD -> (3) Certificates -> (4) Confirm & Plan -> (5) Pay ---
-    public Guid? TermId { get; set; }
     public string? FrontCardUrl { get; set; }
     public string? BackCardUrl { get; set; }
     public string? FaceImageUrl { get; set; }
     public string? FaceImageLeftUrl { get; set; }
     public string? FaceImageRightUrl { get; set; }
-    public string? FaceImageTopUrl { get; set; }
-    public string? FaceImageBottomUrl { get; set; }
     public Guid? CoachSubscriptionPlansId { get; set; }
-    public Guid? PriceId
-    {
-        get => CoachSubscriptionPlansId;
-        set => CoachSubscriptionPlansId = value;
-    }
     public List<CoachCertificateItem> Certificates { get; set; } = new();
 }
 

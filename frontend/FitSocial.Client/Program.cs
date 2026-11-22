@@ -25,6 +25,7 @@ using FitSocial.Client.Services.Reports;
 using FitSocial.Client.Services.SubscriptionPriceHistory;
 using FitSocial.Client.Services.Analytics;
 using FitSocial.Client.Services.Toast;
+using FitSocial.Client.Models.Coach;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");

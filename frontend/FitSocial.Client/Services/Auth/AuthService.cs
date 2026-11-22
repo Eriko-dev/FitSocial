@@ -18,7 +18,7 @@ public interface IAuthService
     Task<ApiResponse<bool>> ForgotPasswordAsync(string email);
     Task<ApiResponse<bool>> ResetPasswordAsync(ResetPasswordRequest request);
     Task<ApiResponse<bool>> ChangePasswordAsync(ChangePasswordRequest request);
-    Task<ApiResponse<AuthResponse>> RegisterAsync(RegisterRequest request);
+    Task<ApiResponse<AuthResponse>> RegisterTraineeAsync(RegisterTraineeRequest request);
     Task LogoutAsync();
     Task<string?> GetTokenAsync();
     Task<bool> IsAuthenticatedAsync();
@@ -204,7 +204,7 @@ public class AuthService : IAuthService
         }
     }
 
-    public async Task<ApiResponse<AuthResponse>> RegisterAsync(RegisterRequest request)
+    public async Task<ApiResponse<AuthResponse>> RegisterTraineeAsync(RegisterTraineeRequest request)
     {
         try
         {

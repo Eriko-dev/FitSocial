@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using FitSocial.Client.Models.Auth;
+using FitSocial.Client.Models.Coach;
 using FitSocial.Client.Models.Common;
 using FitSocial.Client.Models.Payments;
 using FitSocial.Client.Services.Auth;
@@ -7,32 +8,10 @@ using FitSocial.Client.Services.Http;
 
 namespace FitSocial.Client.Services.Payment;
 
-/// <summary>
-/// Holds the coach registration draft while the user pays on /coach-payment.
-/// Account is only created (register-coach) after successful payment.
-/// </summary>
-public class PendingCoachRegistration
-{
-    public RegisterRequest? Draft { get; set; }
-    public List<Guid> SportIds { get; set; } = new();
-    public List<Guid> SpecialtyIds { get; set; } = new();
-    public List<string> SpecialtyNames { get; set; } = new();
-
-    public bool HasDraft => Draft != null;
-
-    public void Clear()
-    {
-        Draft = null;
-        SportIds = new List<Guid>();
-        SpecialtyIds = new List<Guid>();
-        SpecialtyNames = new List<string>();
-    }
-}
-
 public interface IPaymentService
 {
-    Task<ApiResponse<CoachActivationPreview>> PrepareCoachActivationAsync(RegisterRequest draft);
-    Task<ApiResponse<ActivationLink>> CreateActivationLinkAsync(RegisterRequest draft);
+    Task<ApiResponse<CoachActivationPreview>> PrepareCoachActivationAsync(RegisterCoachRequest draft);
+    Task<ApiResponse<ActivationLink>> CreateActivationLinkAsync(RegisterCoachRequest draft);
     Task<ApiResponse<AuthResponse>> CompleteActivationAsync(long orderCode);
     Task<ApiResponse<bool>> CancelActivationAsync(long orderCode);
     Task<ApiResponse<CoachSubscriptionStatus>> GetCurrentCoachSubscriptionAsync();
@@ -53,7 +32,7 @@ public class PaymentApiService : IPaymentService
         _tokenStorage = tokenStorage;
     }
 
-    public async Task<ApiResponse<CoachActivationPreview>> PrepareCoachActivationAsync(RegisterRequest draft)
+    public async Task<ApiResponse<CoachActivationPreview>> PrepareCoachActivationAsync(RegisterCoachRequest draft)
     {
         try
         {
@@ -80,7 +59,7 @@ public class PaymentApiService : IPaymentService
         }
     }
 
-    public async Task<ApiResponse<ActivationLink>> CreateActivationLinkAsync(RegisterRequest draft)
+    public async Task<ApiResponse<ActivationLink>> CreateActivationLinkAsync(RegisterCoachRequest draft)
     {
         try
         {

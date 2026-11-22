@@ -1,30 +1,12 @@
 using System.Net.Http.Json;
+using FitSocial.Client.Models.Ekyc;
 
 namespace FitSocial.Client.Services.Ekyc;
-
-public class EkycRequest
-{
-    public string FrontCardUrl { get; set; } = string.Empty;
-    public string BackCardUrl { get; set; } = string.Empty;
-    public string? FaceImageUrl { get; set; }
-    public string? FaceImageLeftUrl { get; set; }
-    public string? FaceImageRightUrl { get; set; }
-    public string? FaceImageTopUrl { get; set; }
-    public string? FaceImageBottomUrl { get; set; }
-}
 
 public interface IEkycService
 {
     Task<(bool Success, string? Error, EkycResult? Data)> VerifyAsync(EkycRequest request);
     Task<(bool Success, string? Error)> CheckIdCardAsync(string idCardNumber, string? email);
-}
-
-public class EkycResult
-{
-    public string IdCardNumber { get; set; } = string.Empty;
-    public string FullNameOnCard { get; set; } = string.Empty;
-    public DateOnly? DateOfBirthOnCard { get; set; }
-    public string VerificationStatus { get; set; } = string.Empty;
 }
 
 public class EkycService : IEkycService

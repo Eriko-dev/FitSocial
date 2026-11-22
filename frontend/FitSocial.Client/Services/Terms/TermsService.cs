@@ -1,16 +1,8 @@
 using System.Net.Http.Json;
 using FitSocial.Client.Models.Common;
+using FitSocial.Client.Models.Terms;
 
 namespace FitSocial.Client.Services.Terms;
-
-public class TermsDto
-{
-    public Guid TermId { get; set; }
-    public string Version { get; set; } = string.Empty;
-    public string Title { get; set; } = string.Empty;
-    public string Content { get; set; } = string.Empty;
-    public DateTime EffectiveDate { get; set; }
-}
 
 public interface ITermsService
 {
