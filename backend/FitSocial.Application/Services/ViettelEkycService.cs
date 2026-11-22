@@ -3,7 +3,6 @@ using FitSocial.Application.Interfaces;
 using FitSocial.Domain.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace FitSocial.Application.Services;
@@ -30,10 +29,6 @@ public class ViettelEkycService : IEkycService
         _users = users;
     }
 
-    /// <summary>
-    /// Checks if an ID card number is still available (not used by another coach).
-    /// Moved here from EkycController so controllers stay thin (layered architecture).
-    /// </summary>
     public async Task<(bool Available, string? Error)> CheckIdCardAsync(string idCardNumber, string? email, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(idCardNumber))
@@ -71,13 +66,10 @@ public class ViettelEkycService : IEkycService
         var idCardUrl = _configuration["ViettelEkyc:ApiUrl"] ?? "https://viettelai.vn/ekyc/id_card";
         var faceMatchingUrl = _configuration["ViettelEkyc:FaceMatchingUrl"] ?? "https://viettelai.vn/ekyc/face_matching";
         var faceLivenessUrl = _configuration["ViettelEkyc:FaceLivenessUrl"] ?? "https://viettelai.vn/ekyc/face_liveness";
-        // Ngưỡng: 0.6-0.7 là phổ biến, docs example 0.9 rất gắt
         var refScoreStr = _configuration["ViettelEkyc:RefScore"] ?? "0.65";
         if (!double.TryParse(refScoreStr, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var refScore))
             refScore = 0.65;
 
-        // Viettel eKYC can take longer than the default 30s, especially for
-        // high-resolution ID card images. Allow a generous, configurable timeout.
         var timeoutSecondsStr = _configuration["ViettelEkyc:TimeoutSeconds"] ?? "120";
         if (!int.TryParse(timeoutSecondsStr, out var timeoutSeconds) || timeoutSeconds <= 0)
             timeoutSeconds = 120;
@@ -105,7 +97,6 @@ public class ViettelEkycService : IEkycService
         }
         catch (InvalidOperationException ex) { return (false, ex.Message, null!); }
 
-        // Optional extra poses for liveness (Left/Right/Top/Bottom)
         var extraPoses = new List<(byte[] bytes, string pose)>();
         async Task TryAddPose(string? url, string pose)
         {
@@ -115,10 +106,7 @@ public class ViettelEkycService : IEkycService
         }
         await TryAddPose(request.FaceImageLeftUrl, "Left");
         await TryAddPose(request.FaceImageRightUrl, "Right");
-        await TryAddPose(request.FaceImageTopUrl, "Top");
-        await TryAddPose(request.FaceImageBottomUrl, "Bottom");
 
-        // 1) Bóc tách CCCD
         EkycExtract? extract = null;
         try
         {
@@ -180,7 +168,7 @@ public class ViettelEkycService : IEkycService
                     else if (DateOnly.TryParseExact(bday, "dd-MM-yyyy", out var d2)) dob = d2;
                     else if (DateOnly.TryParse(bday, out var d3)) dob = d3;
                 }
-                // Extract all bóc tách fields for full storage
+
                 string GetStr(string key) => info.TryGetProperty(key, out var el) ? el.GetString() ?? "" : "";
                 var birthplace = GetStr("birthplace");
                 var sex = GetStr("sex");
@@ -240,7 +228,6 @@ public class ViettelEkycService : IEkycService
         decimal? faceMatchScore = null;
         decimal? livenessScore = null;
 
-        // 2) Đối sánh khuôn mặt (Front CCCD vs Live Portrait)
         try
         {
             using var form = new MultipartFormDataContent();
@@ -293,11 +280,11 @@ public class ViettelEkycService : IEkycService
                 if (root.TryGetProperty("score", out var sEl) && sEl.TryGetDouble(out var sd)) score = sd;
                 faceMatchScore = (decimal)score;
                 _logger.LogInformation("Face matching score {Score} ref {Ref} verify {Verify} raw {Raw}", score, refScore, verifyResult, verifyStr);
-                // Nới lỏng: nếu score rất cao (>=0.85) thì cho qua dù verify=false (Viettel gắt do ảnh thẻ chụp nghiêng/lóa, mặt 2021 vs live 2026)
+
                 if (!verifyResult && score < 0.85)
-                    return (false, $"Face does not match ID card (verify={verifyResult}, score {score:F2}, threshold {refScore:F2}). Please retake: front card straight, no glare, live face front-facing, good lighting, no glasses. Raw: verify={verifyResult} score={score:F2}", null!);
+                    return (false, "Face does not match your ID card. Please ensure your card is straight without glare, and your live face is front-facing in good lighting without glasses.", null!);
                 if (verifyResult && score < refScore)
-                    return (false, $"Face score too low ({score:F2} < {refScore:F2}). Please retake a clear front-facing photo.", null!);
+                    return (false, "Face match score is too low. Please retake a clear front-facing photo.", null!);
                 if (!verifyResult && score >= 0.85)
                     _logger.LogWarning("Face matching verify=false but score {Score} >=0.85, allowing pass (lenient for same person, card photo 2021 vs live)", score);
             }
@@ -308,8 +295,6 @@ public class ViettelEkycService : IEkycService
             return (false, "Could not verify face matching. Please try again.", null!);
         }
 
-        // 3) Phát hiện thực thể sống - Portrait chính + các pose phụ (Left/Right/Top/Bottom) nếu có
-        // Gần/xa được hướng dẫn ở frontend (yêu cầu user lại gần/ra xa), backend chỉ cần check Portrait là đủ, nhưng nếu có thêm pose sẽ check từng pose
         var livenessChecks = new List<(byte[] bytes, string pose)> { (liveBytes, "Portrait") };
         livenessChecks.AddRange(extraPoses);
 
@@ -350,7 +335,7 @@ public class ViettelEkycService : IEkycService
                     }
                     return (false, string.IsNullOrWhiteSpace(msg) ? $"Liveness check failed for {pose}. Please ensure you are a real person in good lighting." : $"{pose}: {msg}", null!);
                 }
-                // verify_result: "Real" / "Fake" or similar - docs say String verify_result + score Float [0-1]
+
                 string verifyStr = "";
                 if (root.TryGetProperty("verify_result", out var vrEl))
                 {
@@ -365,17 +350,17 @@ public class ViettelEkycService : IEkycService
                 }
                 _logger.LogInformation("Liveness {Pose} verify {Verify} score {Score}", pose, verifyStr, score);
                 if (pose == "Portrait") livenessScore = (decimal)score;
-                // Coi "Real" / "True" / score >= 0.5 là pass
+
                 bool isReal = verifyStr.Equals("Real", StringComparison.OrdinalIgnoreCase)
                     || verifyStr.Equals("True", StringComparison.OrdinalIgnoreCase)
                     || verifyStr.Equals("true", StringComparison.OrdinalIgnoreCase)
                     || score >= 0.5f;
-                // Nếu API trả verify_result là Boolean thì đã xử lý ở trên
+
                 if (!isReal && score < 0.5f && !string.IsNullOrWhiteSpace(verifyStr) && verifyStr.Equals("Fake", StringComparison.OrdinalIgnoreCase))
                     return (false, $"Liveness check failed for {pose} (fake/spoof detected). Please use a real live photo with good lighting.", null!);
-                // Nếu score thấp nhưng verify_result không rõ, vẫn chặn nếu score < 0.3
+
                 if (score > 0 && score < 0.3f)
-                    return (false, $"Liveness score too low for {pose} ({score:F2}). Please retake with face centered, good lighting, and follow the guide (near/far, left/right).", null!);
+                    return (false, $"Face liveness verification was not clear for {pose}. Please retake with face centered in good lighting.", null!);
             }
             catch (Exception ex)
             {
@@ -384,7 +369,6 @@ public class ViettelEkycService : IEkycService
             }
         }
 
-        // Gắn scores vào extract để lưu DB
         if (faceMatchScore.HasValue || livenessScore.HasValue)
         {
             extract = extract with
