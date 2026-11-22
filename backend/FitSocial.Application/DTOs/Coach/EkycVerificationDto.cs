@@ -3,18 +3,16 @@ namespace FitSocial.Application.DTOs.Coach;
 public class EkycVerificationDto
 {
     public string FrontCardUrl { get; set; } = string.Empty;
-    public string BackCardUrl { get; set; } = string.Empty;
-    /// <summary>Portrait (chính diện) - bắt buộc</summary>
-    public string? FaceImageUrl { get; set; }
-    /// <summary>Các pose phụ cho liveness: Left/Right/Top/Bottom hoặc near/far (nếu có)</summary>
-    public string? FaceImageLeftUrl { get; set; }
-    public string? FaceImageRightUrl { get; set; }
-    public string? FaceImageTopUrl { get; set; }
-    public string? FaceImageBottomUrl { get; set; }
 
-    /// <summary>Email của người đăng ký (dùng để kiểm tra trùng CCCD theo user).</summary>
+    public string BackCardUrl { get; set; } = string.Empty;
+ 
+    public string? FaceImageUrl { get; set; }
+
+    public string? FaceImageLeftUrl { get; set; }
+
+    public string? FaceImageRightUrl { get; set; }
+
     public string? Email { get; set; }
 
-    /// <summary>UserId hiện tại (nếu có) để loại trừ khi kiểm tra trùng CCCD.</summary>
     public Guid? UserId { get; set; }
 }

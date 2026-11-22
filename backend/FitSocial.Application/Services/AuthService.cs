@@ -100,7 +100,7 @@ public class AuthService : IAuthService
         var body = $@"
             <div style=""font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;"">
                 <div style=""text-align: center; margin-bottom: 20px;"">
-                    <img src=""https://res.cloudinary.com/avvuvfw6/image/upload/v1789397609/fitsocial/credentials/Logo_FitSocial_agntvx.jpg"" alt=""FitConnect"" style=""width: 72px; height: 72px; border-radius: 16px;"" />
+                    <img src=""https://res.cloudinary.com/avvuvfw6/image/upload/v1795368774/fitsocial/posts/images/b9ptdmtfuuawi3kxv4k7.png"" alt=""FitConnect"" style=""width: 72px; height: 72px; border-radius: 16px;"" />
                     <h2 style=""color: #FF5722; margin: 8px 0 0;"">FitConnect</h2>
                     <p style=""color: #666; margin: 5px 0 0;"">Sports & Fitness Community</p>
                 </div>
@@ -433,8 +433,6 @@ public class AuthService : IAuthService
             FaceImageUrl = request.FaceImageUrl,
             FaceImageLeftUrl = request.FaceImageLeftUrl,
             FaceImageRightUrl = request.FaceImageRightUrl,
-            FaceImageTopUrl = request.FaceImageTopUrl,
-            FaceImageBottomUrl = request.FaceImageBottomUrl,
             Email = normalizedEmail
         });
         var ekycOk = ekycResult.Success;
@@ -757,7 +755,7 @@ public class AuthService : IAuthService
         var body = $@"
             <div style=""font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;"">
                 <div style=""text-align: center; margin-bottom: 20px;"">
-                    <img src=""https://res.cloudinary.com/avvuvfw6/image/upload/v1789397609/fitsocial/credentials/Logo_FitSocial_agntvx.jpg"" alt=""FitConnect"" style=""width: 72px; height: 72px; border-radius: 16px;"" />
+                    <img src=""https://res.cloudinary.com/avvuvfw6/image/upload/v1795368774/fitsocial/posts/images/b9ptdmtfuuawi3kxv4k7.png"" alt=""FitConnect"" style=""width: 72px; height: 72px; border-radius: 16px;"" />
                     <h2 style=""color: #FF5722; margin: 8px 0 0;"">FitConnect</h2>
                     <p style=""color: #666; margin: 5px 0 0;"">Sports & Fitness Community</p>
                 </div>

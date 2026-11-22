@@ -176,8 +176,6 @@ public class AuthService : IAuthService
 
             var response = await _httpClient.SendAsync(httpRequest);
 
-            // Production: access token may have expired in the 15-min window.
-            // Try one silent refresh and retry before surfacing 401 to the user.
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
                 var refreshed = await RefreshTokenAsync();
@@ -286,10 +284,6 @@ public class AuthService : IAuthService
         }
     }
 
-    /// <summary>
-    /// Reads the raw body first so a non-JSON server reply (proxy page, crash page, ...)
-    /// surfaces its real content instead of a cryptic "'X' is an invalid start" error.
-    /// </summary>
     private async Task<(ApiResponse<T>? Result, string? RawPreview)> ReadResponseAsync<T>(HttpResponseMessage response)
     {
         string raw;
@@ -385,8 +379,6 @@ public class AuthService : IAuthService
 
     public async Task LogoutAsync()
     {
-        // Best effort: revoke the tokens server-side first so they die immediately.
-        // Local sign-out below always runs, even offline.
         string? refreshToken = null;
         try
         {
@@ -406,7 +398,6 @@ public class AuthService : IAuthService
         }
         catch (Exception ex)
         {
-            // Ignored on purpose: local sign-out must never be blocked by network errors.
             _logger.LogWarning(ex, "Server-side logout failed. Continuing with local sign-out.");
         }
 
@@ -416,11 +407,6 @@ public class AuthService : IAuthService
         ((CustomAuthenticationStateProvider)_authStateProvider).NotifyUserLogout();
     }
 
-    /// <summary>
-    /// Rotates the session using the stored refresh token.
-    /// Returns false when there is no refresh token or the server rejects it
-    /// (caller should send the user back to the login page).
-    /// </summary>
     public async Task<bool> RefreshTokenAsync()
     {
         try
@@ -457,8 +443,6 @@ public class AuthService : IAuthService
         var token = await GetTokenAsync();
         if (string.IsNullOrWhiteSpace(token)) return false;
 
-        // Production: treat an expired 15-min access token as logged-out unless
-        // the refresh token can silently rotate it.
         if (!CustomAuthenticationStateProvider.IsTokenExpired(token, TimeSpan.FromSeconds(60)))
             return true;
 

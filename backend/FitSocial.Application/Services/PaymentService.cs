@@ -59,14 +59,9 @@ public class PaymentService : IPaymentService
 
     private Guid? ResolvePlanId(RegisterCoachRequestDto request)
     {
-        // New field first, legacy PriceId alias second
         return request.CoachSubscriptionPlansId ?? request.PriceId;
     }
 
-    /// <summary>
-    /// Validates the coach draft BEFORE paying (model + email availability).
-    /// Uses selected CoachSubscriptionPlansId (required per FitConnect spec).
-    /// </summary>
     public async Task<ApiResponseDto<CoachActivationPreviewDto>> PrepareCoachActivationAsync(RegisterCoachRequestDto request)
     {
         var normalizedEmail = request.Email.Trim().ToLower();
@@ -95,14 +90,9 @@ public class PaymentService : IPaymentService
             "Order preview created. Proceed to payment.");
     }
 
-    /// <summary>
-    /// Delegates account creation to AuthService, then creates the payment order/link.
-    /// Plan is required per FitConnect spec (Confirm & Plan step).
-    /// </summary>
     public async Task<ApiResponseDto<ActivationLinkDto>> CreateActivationLinkAsync(
         RegisterCoachRequestDto request, string originUrl, string? ipAddress = null)
     {
-        // 0. Validate plan BEFORE creating account (avoid orphan users)
         var planId = ResolvePlanId(request);
         if (planId == null || planId == Guid.Empty)
             return ApiResponseDto<ActivationLinkDto>.Fail("Please select a subscription plan.");
@@ -110,7 +100,6 @@ public class PaymentService : IPaymentService
         if (plan == null || plan.IsActive != true || plan.Amount == null)
             return ApiResponseDto<ActivationLinkDto>.Fail("Selected subscription plan is not available.");
 
-        // 1. Create the pending coach account via AuthService (handles OTP, eKYC, certificates, terms)
         var authResult = await _authService.RegisterCoachAsync(request, ipAddress);
         if (!authResult.Success || authResult.Data == null)
         {
@@ -118,7 +107,6 @@ public class PaymentService : IPaymentService
         }
         var user = authResult.Data;
 
-        // 2. Cancel any stale pending orders for this user
         var staleOrders = await _orders.ListPendingActivationByUserAsync(user.UserId, PaymentConstants.OrderTypeCoachActivation);
         foreach (var stale in staleOrders)
         {
@@ -127,7 +115,6 @@ public class PaymentService : IPaymentService
 
         var fee = plan.Amount.Value;
         var currency = string.IsNullOrWhiteSpace(plan.Currency) ? PaymentConstants.CurrencyVnd : plan.Currency!;
-        // SubscriptionDuration is stored in MONTHS; TrainingPackageDuration in DAYS.
         int durationDays;
         if (plan.SubscriptionDuration.HasValue)
             durationDays = plan.SubscriptionDuration.Value * 30;
@@ -176,7 +163,6 @@ public class PaymentService : IPaymentService
         });
         await _orders.AddAsync(order);
 
-        // Create CoachUpgrade linking the selected plan
         var upgrade = new CoachUpgrade
         {
             UpgradeId = Guid.NewGuid(),
@@ -238,7 +224,6 @@ public class PaymentService : IPaymentService
         if (user == null)
             return ApiResponseDto<ActivationLinkDto>.Fail("Coach account not found.");
 
-        // Cancel stale pending orders
         var staleOrders = await _orders.ListPendingActivationByUserAsync(user.UserId, PaymentConstants.OrderTypeCoachActivation);
         foreach (var stale in staleOrders)
             stale.OrderStatus = PaymentConstants.OrderStatusCancelled;
@@ -338,23 +323,16 @@ public class PaymentService : IPaymentService
             "Payment link created. Complete the payment to renew your coach subscription.");
     }
 
-    /// <summary>
-    /// Regenerates a coach activation payment link for an already-created (locked) coach account
-    /// whose activation payment has not been completed yet. Used when the user logs in again
-    /// before paying. Reuses the latest pending/cancelled upgrade's plan (or the first active plan).
-    /// </summary>
     public async Task<ApiResponseDto<ActivationLinkDto>> RegenerateCoachActivationAsync(Guid coachId, string originUrl, string? ipAddress = null)
     {
         var user = await _users.GetByIdAsync(coachId);
         if (user == null)
             return ApiResponseDto<ActivationLinkDto>.Fail("Account not found.");
 
-        // Already activated -> no need to pay again
         var activeUpgrade = await _coachUpgrades.GetLatestFinishedByCoachIdAsync(coachId);
         if (activeUpgrade != null && activeUpgrade.Status == "ACTIVE")
             return ApiResponseDto<ActivationLinkDto>.Fail("Your coach account is already activated.");
 
-        // Resolve plan: prefer the latest upgrade's plan, otherwise first active plan
         var latestUpgrade = await _coachUpgrades.GetLatestByCoachIdAsync(coachId);
         Guid? planId = latestUpgrade?.CoachSubscriptionPlansId;
         if (planId == null || planId == Guid.Empty)
@@ -370,7 +348,6 @@ public class PaymentService : IPaymentService
         if (plan == null || plan.IsActive != true || plan.Amount == null)
             return ApiResponseDto<ActivationLinkDto>.Fail("Selected subscription plan is not available.");
 
-        // Cancel stale pending orders
         var staleOrders = await _orders.ListPendingActivationByUserAsync(user.UserId, PaymentConstants.OrderTypeCoachActivation);
         foreach (var stale in staleOrders)
             stale.OrderStatus = PaymentConstants.OrderStatusCancelled;
@@ -475,8 +452,6 @@ public class PaymentService : IPaymentService
 
     public async Task<ApiResponseDto<CoachSubscriptionStatusDto>> GetCurrentCoachSubscriptionAsync(Guid coachId)
     {
-        // Only consider finished (paid/expired) upgrades for display; an unpaid (PENDING)
-        // or cancelled renewal must not replace the previously purchased (possibly expired) plan.
         var upgrade = await _coachUpgrades.GetLatestFinishedByCoachIdAsync(coachId);
         if (upgrade == null)
             return ApiResponseDto<CoachSubscriptionStatusDto>.Ok(new CoachSubscriptionStatusDto { Status = "NONE" }, "No subscription found.");
@@ -521,10 +496,6 @@ public class PaymentService : IPaymentService
         return await RegenerateCoachActivationAsync(user.UserId, originUrl, ipAddress);
     }
 
-    /// Verify the PayOS payment by order code, then unlock the account and sign the coach in.
-    /// Idempotent: already-paid orders simply sign the user in again.
-    /// Also stores GatewayResponseRaw on success.
-    /// </summary>
     public async Task<ApiResponseDto<AuthResponseDto>> CompleteActivationAsync(long orderCode)
     {
         var payment = await _payments.FindByGatewayTransactionIdAsync(orderCode.ToString());
@@ -590,7 +561,6 @@ public class PaymentService : IPaymentService
         payment.Status = PaymentConstants.PaymentStatusSuccess;
         payment.ProcessedAt = now;
         payment.UpdatedAt = now;
-        // Mark CoachUpgrade as ACTIVE and set EndDay from plan duration
         var upgrade = await _coachUpgrades.GetByOrderIdAsync(order.OrderId);
         if (upgrade != null)
         {
@@ -601,8 +571,7 @@ public class PaymentService : IPaymentService
             else
                 upgrade.EndDay = now.AddDays(planForUpgrade?.TrainingPackageDuration ?? 365);
         }
-        // Keep the account locked until an admin approves the coach application.
-        // Only the admin approval flow (ApproveCoachApplicationAsync) unlocks it.
+
         user.LastActiveAt = now;
         user.UpdatedAt = now;
 
@@ -661,12 +630,6 @@ public class PaymentService : IPaymentService
         return ApiResponseDto<bool>.Ok(true, "Payment order cancelled.");
     }
 
-    /// <summary>
-    /// PayOS webhook dispatch (backup for the return-url flow; requires a public URL in production).
-    /// Routes by OrderType: COACH_ACTIVATION unlocks the account, PACKAGE activates enrollment.
-    /// Moved here from PaymentsController so controllers stay thin (layered architecture).
-    /// Never throws: returns false instead so the webhook handshake never fails because of our errors.
-    /// </summary>
     public async Task<bool> HandlePayOsWebhookAsync(string? code, long orderCode, CancellationToken cancellationToken = default)
     {
         try
@@ -681,7 +644,6 @@ public class PaymentService : IPaymentService
                 return false;
             }
 
-            // Route webhook to the correct fulfillment flow by order type
             var payment = await _payments.FindByGatewayTransactionIdAsync(orderCode.ToString(), cancellationToken);
             if (payment != null)
             {
@@ -701,10 +663,6 @@ public class PaymentService : IPaymentService
             return false;
         }
     }
-
-    // =====================================================
-    // UC-20: Purchase Training Package via PayOS VietQR
-    // =====================================================
 
     private async Task<(User? buyer, TrainingPackage? package, string? error)> ValidatePackagePurchaseAsync(
         Guid buyerId, Guid packageId, CancellationToken ct = default)
@@ -731,20 +689,16 @@ public class PaymentService : IPaymentService
             return (buyer, null, "Training package not found.");
         }
 
-        // 20.0.E2 Self-Purchase Attempt
         if (package.CoachId == buyerId)
         {
             return (buyer, package, "You cannot purchase your own training package.");
         }
 
-        // 20.0.E1 Package No Longer Active
         if (package.IsActive != true)
         {
             return (buyer, package, "This training package is no longer active or open for enrollment. Please refresh your cart.");
         }
 
-        // 20.0.E4 Already Purchased check: Only block repurchasing if trainee currently has an active ongoing enrollment (within duration).
-        // Completed / expired packages can be repurchased.
         var buyerOrders = await _orders.GetOrdersByBuyerIdAsync(buyerId, ct);
         var activePaidStatuses = new[] { PaymentConstants.OrderStatusPaid, PaymentConstants.OrderStatusCompleted, "ACTIVE" };
         var now = DateTime.UtcNow;
@@ -780,9 +734,6 @@ public class PaymentService : IPaymentService
             ?? "Coach";
     }
 
-    /// <summary>
-    /// Step 2 of UC-20: build the Order Summary (package title, duration, price VND, coach, trainee).
-    /// </summary>
     public async Task<ApiResponseDto<PackagePurchasePreviewDto>> PreparePackagePurchaseAsync(Guid buyerId, Guid packageId)
     {
         var (buyer, package, error) = await ValidatePackagePurchaseAsync(buyerId, packageId);
@@ -808,9 +759,6 @@ public class PaymentService : IPaymentService
             "Order summary ready. Review and proceed to payment.");
     }
 
-    /// <summary>
-    /// Step 4 of UC-20: create pending order + PayOS VietQR transaction.
-    /// </summary>
     public async Task<ApiResponseDto<PackagePaymentLinkDto>> CreatePackagePaymentLinkAsync(Guid buyerId, Guid packageId, string originUrl)
     {
         var (buyer, package, error) = await ValidatePackagePurchaseAsync(buyerId, packageId);
@@ -825,7 +773,6 @@ public class PaymentService : IPaymentService
             return ApiResponseDto<PackagePaymentLinkDto>.Fail("Invalid package price.");
         }
 
-        // Cancel stale pending PACKAGE orders for same buyer+package (keep cart semantics)
         var staleOrders = await _orders.ListPendingActivationByUserAsync(buyerId, PaymentConstants.OrderTypePackage);
         foreach (var stale in staleOrders)
         {
@@ -964,10 +911,6 @@ public class PaymentService : IPaymentService
             || s == "ACTIVE";
     }
 
-    /// <summary>
-    /// Steps 6-7 of UC-20: verify PayOS, mark COMPLETED, activate enrollment + TrainingPlan, clear cart.
-    /// Idempotent: already-completed orders return success without duplicating TrainingPlan.
-    /// </summary>
     public async Task<ApiResponseDto<OrderDto>> CompletePackagePurchaseAsync(long orderCode)
     {
         var payment = await _payments.FindByGatewayTransactionIdAsync(orderCode.ToString());
@@ -1007,7 +950,6 @@ public class PaymentService : IPaymentService
             return ApiResponseDto<OrderDto>.Fail($"Could not verify the payment: {ex.Message}");
         }
 
-        // 20.0.E3 Payment Timeout or Failure
         if (!status.IsPaid || status.Amount < (order.TotalAmount ?? 0))
         {
             return ApiResponseDto<OrderDto>.Fail("Payment has not been completed yet. If you already transferred, wait a moment and tap Verify again.");
@@ -1019,7 +961,6 @@ public class PaymentService : IPaymentService
         payment.ProcessedAt = now;
         payment.UpdatedAt = now;
 
-        // POST-2: activate enrollment -> TrainingPlan linked to OrderDetails
         var detail = order.OrderDetails.FirstOrDefault();
         if (detail != null && _trainingPlans != null)
         {
@@ -1041,7 +982,7 @@ public class PaymentService : IPaymentService
                     UpdatedAt = now,
                     PublishedAt = now
                 };
-                // Guard: CoachId must be valid (FK). If missing, skip plan creation but keep order completed.
+
                 if (trainingPlan.CoachId != Guid.Empty)
                 {
                     await _trainingPlans.AddAsync(trainingPlan);
@@ -1049,7 +990,6 @@ public class PaymentService : IPaymentService
             }
         }
 
-        // Remove purchased package from buyer's cart (retain other items)
         if (_carts != null && detail?.PackageId != null)
         {
             var cartItem = await _carts.GetCartItemAsync(order.BuyerId, detail.PackageId.Value);
@@ -1059,7 +999,6 @@ public class PaymentService : IPaymentService
             }
         }
 
-        // Notify buyer + coach (best-effort)
         if (_notifications != null)
         {
             try
@@ -1112,9 +1051,6 @@ public class PaymentService : IPaymentService
             "Payment successful! Your training package is now active.");
     }
 
-    /// <summary>
-    /// 20.1 Cancel Order Checkout: cancel pending payment, keep cart item.
-    /// </summary>
     public async Task<ApiResponseDto<bool>> CancelPackagePurchaseAsync(long orderCode, Guid? requesterId = null)
     {
         var payment = await _payments.FindByGatewayTransactionIdAsync(orderCode.ToString());
