@@ -137,7 +137,11 @@ public class ViettelEkycService : IEkycService
             if (!resp.IsSuccessStatusCode)
             {
                 _logger.LogWarning("Viettel id_card HTTP {Status}: {Body}", resp.StatusCode, raw);
-                return (false, $"ID verification failed (Viettel { (int)resp.StatusCode}). Please retake clear front/back photos and try again. Raw: {raw[..Math.Min(200, raw.Length)]}", null!);
+                if (resp.StatusCode == System.Net.HttpStatusCode.Forbidden || raw.Contains("remaining unit", StringComparison.OrdinalIgnoreCase) || raw.Contains("upgrade your package", StringComparison.OrdinalIgnoreCase))
+                {
+                    return (false, "Identity verification service is temporarily unavailable. Please try again later or contact support.", null!);
+                }
+                return (false, "ID card could not be verified. Please ensure your photos are clear, well-lit, and try again.", null!);
             }
             else
             {
@@ -151,7 +155,10 @@ public class ViettelEkycService : IEkycService
                     string msg = !string.IsNullOrWhiteSpace(vi) ? vi : en;
                     if (string.IsNullOrWhiteSpace(msg) && root.TryGetProperty("message", out var m)) msg = m.GetString() ?? "";
                     _logger.LogWarning("Viettel id_card error {Code}: {Msg}", code, msg);
-                    // 261 = không có giấy tờ trong ảnh, 400 = sai dữ liệu
+                    if (msg.Contains("remaining unit", StringComparison.OrdinalIgnoreCase) || code == 403 || msg.Contains("upgrade your package", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return (false, "Identity verification service is temporarily unavailable. Please try again later or contact support.", null!);
+                    }
                     return (false, string.IsNullOrWhiteSpace(msg) ? "ID card could not be verified. Please retake photos." : msg, null!);
                 }
                 string infoStr = "";
@@ -251,7 +258,11 @@ public class ViettelEkycService : IEkycService
             if (!resp.IsSuccessStatusCode)
             {
                 _logger.LogWarning("Viettel face_matching HTTP {Status}: {Body}", resp.StatusCode, raw);
-                return (false, $"Face matching failed (Viettel {(int)resp.StatusCode}). Please try again. Raw: {raw[..Math.Min(200, raw.Length)]}", null!);
+                if (resp.StatusCode == System.Net.HttpStatusCode.Forbidden || raw.Contains("remaining unit", StringComparison.OrdinalIgnoreCase) || raw.Contains("upgrade your package", StringComparison.OrdinalIgnoreCase))
+                {
+                    return (false, "Face matching service is temporarily unavailable. Please try again later or contact support.", null!);
+                }
+                return (false, "Face matching failed. Please ensure your live photo is clear, well-lit, and matches your ID card.", null!);
             }
             else
             {
@@ -264,6 +275,10 @@ public class ViettelEkycService : IEkycService
                     string en = root.TryGetProperty("en_message", out var e) ? e.GetString() ?? "" : "";
                     string msg = !string.IsNullOrWhiteSpace(vi) ? vi : en;
                     if (string.IsNullOrWhiteSpace(msg) && root.TryGetProperty("message", out var m)) msg = m.GetString() ?? "";
+                    if (msg.Contains("remaining unit", StringComparison.OrdinalIgnoreCase) || code == 403 || msg.Contains("upgrade your package", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return (false, "Face matching service is temporarily unavailable. Please try again later or contact support.", null!);
+                    }
                     return (false, string.IsNullOrWhiteSpace(msg) ? "Face does not match ID card. Please ensure the live photo is clear and front-facing." : msg, null!);
                 }
                 string verifyStr = "";
@@ -314,7 +329,11 @@ public class ViettelEkycService : IEkycService
                 if (!resp.IsSuccessStatusCode)
                 {
                     _logger.LogWarning("Viettel face_liveness {Pose} HTTP {Status}: {Body}", pose, resp.StatusCode, raw);
-                    return (false, $"Liveness check failed for {pose} (Viettel {(int)resp.StatusCode}). Please try again. Raw: {raw[..Math.Min(200, raw.Length)]}", null!);
+                    if (resp.StatusCode == System.Net.HttpStatusCode.Forbidden || raw.Contains("remaining unit", StringComparison.OrdinalIgnoreCase) || raw.Contains("upgrade your package", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return (false, "Face verification service is temporarily unavailable. Please try again later or contact support.", null!);
+                    }
+                    return (false, $"Face liveness verification failed for {pose}. Please ensure good lighting and try again.", null!);
                 }
                 using var doc = JsonDocument.Parse(raw);
                 var root = doc.RootElement;
@@ -325,6 +344,10 @@ public class ViettelEkycService : IEkycService
                     string en = root.TryGetProperty("en_message", out var e) ? e.GetString() ?? "" : "";
                     string msg = !string.IsNullOrWhiteSpace(vi) ? vi : en;
                     if (string.IsNullOrWhiteSpace(msg) && root.TryGetProperty("message", out var m)) msg = m.GetString() ?? "";
+                    if (msg.Contains("remaining unit", StringComparison.OrdinalIgnoreCase) || code == 403 || msg.Contains("upgrade your package", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return (false, "Face verification service is temporarily unavailable. Please try again later or contact support.", null!);
+                    }
                     return (false, string.IsNullOrWhiteSpace(msg) ? $"Liveness check failed for {pose}. Please ensure you are a real person in good lighting." : $"{pose}: {msg}", null!);
                 }
                 // verify_result: "Real" / "Fake" or similar - docs say String verify_result + score Float [0-1]

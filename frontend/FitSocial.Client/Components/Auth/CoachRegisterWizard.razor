@@ -95,22 +95,34 @@ else if (coachStep == 2)
     <div class="field"><label>Identity card (CCCD) - Back side <span class="req">*</span></label><UploadBox Label="Back" UploadTitle="Upload Back Side of CCCD" UploadSubtitle="JPG, PNG (max 10MB)" @bind-Value="coachModel.BackCardUrl" /></div>
     <div class="field">
         <label>Live Face Verification (Biometric) <span class="req">*</span></label>
-        <div class="liveness-instruct alert alert-info" style="font-size:13px; margin-bottom:8px; padding:8px 10px; border-radius:8px; background:#e8f4fd; border:1px solid #b6e0ff;">
+        <div class="liveness-instruct alert alert-info" style="font-size:0.8rem; margin-bottom:8px; padding:8px 10px; border-radius:8px; background:#e8f4fd; border:1px solid #b6e0ff;">
             <strong>Guide:</strong> Look straight (Portrait) — move face 20cm closer/farther for clarity — then turn left 30° and right 30° if you want higher accuracy. Good lighting, no sunglasses.
         </div>
         <LiveFaceCapture @bind-Value="coachModel.FaceImageUrl" />
         <small class="muted">Required: Portrait front-facing (used for face matching + liveness Portrait)</small>
     </div>
     <details class="field" open>
-        <summary style="cursor:pointer; font-weight:600; margin:6px 0;">Advanced: Add left/right poses (recommended - improves liveness pass rate)</summary>
+        <summary style="cursor:pointer; font-weight:600; font-size:0.8rem; color:#334155; margin:6px 0;">Advanced: Add left/right poses (recommended - improves liveness pass rate)</summary>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:8px;">
             <div><label>Left pose - Turn left 30° <small class="muted">(optional)</small></label><LiveFaceCapture @bind-Value="coachModel.FaceImageLeftUrl" /></div>
             <div><label>Right pose - Turn right 30° <small class="muted">(optional)</small></label><LiveFaceCapture @bind-Value="coachModel.FaceImageRightUrl" /></div>
         </div>
         <small class="muted">Adding Left/Right poses can improve accuracy.</small>
     </details>
-    @if (!string.IsNullOrEmpty(ekycError)) { <div class="field-error">@ekycError</div> }
-    @if (ekycResult != null) { <div class="auth-alert success"><AppIcon Name="check" /><span>CCCD verified: @ekycResult.FullNameOnCard (@ekycResult.IdCardNumber)</span></div> }
+    @if (!string.IsNullOrEmpty(ekycError))
+    {
+        <div class="auth-alert error" style="font-size:0.8rem; margin-top:10px;">
+            <AppIcon Name="warning" />
+            <span>@ekycError</span>
+        </div>
+    }
+    @if (ekycResult != null)
+    {
+        <div class="auth-alert success" style="font-size:0.8rem; margin-top:10px;">
+            <AppIcon Name="check" />
+            <span>CCCD verified: @ekycResult.FullNameOnCard (@ekycResult.IdCardNumber)</span>
+        </div>
+    }
     <div class="wiz-actions">
         <button type="button" class="btn-back" @onclick="() => coachStep = 1">← Back</button>
         <button type="button" class="btn-auth-primary btn-coach flex-grow-1" @onclick="HandleEkycNext" disabled="@isVerifyingEkyc">@if (isVerifyingEkyc) { <span class="spinner-border spinner-border-sm me-2"></span><span>Verifying...</span> } else { <span>Next: Certificates →</span> }</button>
@@ -124,13 +136,28 @@ else if (coachStep == 3)
     </div>
     <div class="field">
         <label>Credentials & professional certificates <span class="req">*</span></label>
-        @foreach (var cert in coachModel.Certificates)
+        @for (int idx = 0; idx < coachModel.Certificates.Count; idx++)
         {
+            var certIndex = idx;
+            var cert = coachModel.Certificates[certIndex];
             <div class="cert-row">
-                <InputText @bind-Value="cert.CertificateName" class="form-control" placeholder="Certificate name (e.g. NASM, CSCS, ACE)" />
-                <InputDate @bind-Value="cert.IssuedDate" class="form-control" placeholder="Issued date" />
-                <UploadBox Label="Cert" UploadTitle="Choose certificate file" UploadSubtitle="PDF, PNG, JPG (max 10MB)" @bind-Value="cert.CertificateUrl" />
-                <button type="button" class="btn-remove" @onclick="() => RemoveCertificate(cert)">Remove</button>
+                <div class="cert-row-header">
+                    <strong>Certificate @(certIndex + 1)</strong>
+                    <button type="button" class="btn-remove-cert" @onclick="() => RemoveCertificate(cert)">✕ Remove</button>
+                </div>
+                <div class="field">
+                    <label>Certificate name <span class="req">*</span></label>
+                    <InputText @bind-Value="cert.CertificateName" class="form-control" placeholder="E.g.: NASM, CSCS, ACE, VFF..." />
+                </div>
+                <div class="field">
+                    <label>Issued date (Date of issue) <span class="req">*</span></label>
+                    <InputDate @bind-Value="cert.IssuedDate" class="form-control" />
+                    <small class="muted">The date this certificate was officially issued.</small>
+                </div>
+                <div class="field">
+                    <label>Certificate document/file <span class="req">*</span></label>
+                    <UploadBox Label="Cert" UploadTitle="Choose certificate file" UploadSubtitle="PDF, PNG, JPG (max 10MB)" @bind-Value="cert.CertificateUrl" />
+                </div>
             </div>
         }
         <button type="button" class="btn-add-cert" @onclick="AddCertificate">+ Add certificate</button>
@@ -273,7 +300,7 @@ else if (coachStep == 5)
     private EkycResult? ekycResult;
     private string? ekycError;
     private bool isVerifyingEkyc = false;
-    private string previewAmount = "2,000";
+    private string previewAmount = "0";
     private ActivationLink? activation;
     private Timer? paymentPollTimer;
     private bool isPollingPayment = false;
@@ -304,18 +331,22 @@ else if (coachStep == 5)
             coachEditContext = new EditContext(coachModel);
             infoMessage = "Welcome back! Your information has been restored. Please resend the OTP code to continue.";
         }
+        else if (coachModel.Certificates.Count == 0)
+        {
+            coachModel.Certificates.Add(new CoachCertificateItem());
+        }
     }
 
     protected override async Task OnInitializedAsync()
     {
         try { latestTerm = await TermsService.GetLatestAsync(); } catch { }
         await LoadActivePlansAsync();
-        try {
-            var firstPlanId = availablePlans.FirstOrDefault()?.PlanId ?? coachModel.CoachSubscriptionPlansId;
-            var draft = new RegisterCoachRequest { Email = "preview@fitsocial.vn", FullName = "Preview", Password = "12345678", ConfirmPassword = "12345678", PhoneNumber = "0900000000", ExperienceYears = 1, CoachSubscriptionPlansId = firstPlanId };
-            var prep = await PaymentService.PrepareCoachActivationAsync(draft);
-            if (prep.Success && prep.Data != null) previewAmount = prep.Data.AmountVnd.ToString("N0");
-        } catch { }
+        var defaultPlan = availablePlans.FirstOrDefault(p => p.PlanId == coachModel.CoachSubscriptionPlansId) ?? availablePlans.FirstOrDefault();
+        if (defaultPlan != null)
+        {
+            coachModel.CoachSubscriptionPlansId ??= defaultPlan.PlanId;
+            if (defaultPlan.Amount != null) previewAmount = defaultPlan.Amount.Value.ToString("N0");
+        }
     }
 
     private async Task LoadActivePlansAsync()
@@ -395,7 +426,21 @@ else if (coachStep == 5)
         if (string.IsNullOrWhiteSpace(coachModel.FaceImageUrl)) { ekycError = "Please capture your live face image."; return; }
         isVerifyingEkyc = true;
         var res = await EkycService.VerifyAsync(new EkycRequest { FrontCardUrl = coachModel.FrontCardUrl, BackCardUrl = coachModel.BackCardUrl, FaceImageUrl = coachModel.FaceImageUrl, FaceImageLeftUrl = coachModel.FaceImageLeftUrl, FaceImageRightUrl = coachModel.FaceImageRightUrl });
-        if (!res.Success) { isVerifyingEkyc = false; ekycError = res.Error ?? "ID verification failed."; return; }
+        if (!res.Success)
+        {
+            isVerifyingEkyc = false;
+            var err = res.Error ?? "ID verification failed.";
+            if (err.Contains("remaining unit", StringComparison.OrdinalIgnoreCase) ||
+                err.Contains("403") ||
+                err.Contains("Raw:", StringComparison.OrdinalIgnoreCase) ||
+                err.Contains("upgrade your package", StringComparison.OrdinalIgnoreCase) ||
+                err.Contains("Hạn mức", StringComparison.OrdinalIgnoreCase))
+            {
+                err = "Identity verification service is temporarily unavailable. Please try again later or contact support.";
+            }
+            ekycError = err;
+            return;
+        }
         var dup = await EkycService.CheckIdCardAsync(res.Data?.IdCardNumber ?? "", coachModel.Email);
         isVerifyingEkyc = false;
         if (!dup.Success) { ekycError = dup.Error ?? "This ID card has already been used for another coach."; return; }
@@ -412,11 +457,13 @@ else if (coachStep == 5)
         errorMessage = null;
         if (!(coachModel.ExperienceYears >= 0 && coachModel.ExperienceYears <= 60)) { errorMessage = "Please enter years of experience (0-60)."; return; }
         if (!coachModel.Certificates.Any(c => !string.IsNullOrWhiteSpace(c.CertificateUrl))) { errorMessage = "Please upload at least one certificate."; return; }
+        var selected = availablePlans.FirstOrDefault(p => p.PlanId == coachModel.CoachSubscriptionPlansId) ?? availablePlans.FirstOrDefault();
+        if (selected != null)
+        {
+            coachModel.CoachSubscriptionPlansId ??= selected.PlanId;
+            if (selected.Amount != null) previewAmount = selected.Amount.Value.ToString("N0");
+        }
         coachStep = 4;
-        _ = Task.Run(async () => {
-            var prep = await PaymentService.PrepareCoachActivationAsync(coachModel);
-            if (prep.Success && prep.Data != null) { previewAmount = prep.Data.AmountVnd.ToString("N0"); await InvokeAsync(StateHasChanged); }
-        });
     }
 
     private async Task HandleConfirmPay()
