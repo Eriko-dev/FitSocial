@@ -88,10 +88,37 @@ public class AdminUserService : IAdminUserService
     {
         try
         {
+            if (adminId.HasValue && adminId.Value == userId && isLocked)
+            {
+                return ApiResponseDto<bool>.Fail("You cannot lock your own account.");
+            }
+
             var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
             if (user == null)
             {
                 return ApiResponseDto<bool>.Fail("User not found.");
+            }
+
+            var targetRole = user.RoleCode?.Trim().ToUpperInvariant();
+            if (targetRole == RoleConstants.Admin)
+            {
+                return ApiResponseDto<bool>.Fail("Administrator accounts cannot be locked.");
+            }
+
+            // Only administrators can lock or unlock staff accounts
+            if (user.IsInternal == true || targetRole == RoleConstants.Staff)
+            {
+                if (!adminId.HasValue)
+                {
+                    return ApiResponseDto<bool>.Fail("Only administrators can lock or unlock staff accounts.");
+                }
+
+                var actor = await _userRepository.GetByIdAsync(adminId.Value, cancellationToken);
+                var actorRole = actor?.RoleCode?.Trim().ToUpperInvariant();
+                if (actorRole != RoleConstants.Admin)
+                {
+                    return ApiResponseDto<bool>.Fail("Only administrators can lock or unlock staff accounts.");
+                }
             }
 
             var previousIsLocked = user.IsLocked ?? false;

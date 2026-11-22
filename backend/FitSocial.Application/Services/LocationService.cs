@@ -16,15 +16,18 @@ public class LocationService : ILocationService
     private readonly ILocationRepository _locationRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IAuditLogService? _auditLogService;
+    private readonly ICurrentUserContext? _currentUserContext;
 
     public LocationService(
         ILocationRepository locationRepository,
         IUnitOfWork unitOfWork,
-        IAuditLogService? auditLogService = null)
+        IAuditLogService? auditLogService = null,
+        ICurrentUserContext? currentUserContext = null)
     {
         _locationRepository = locationRepository;
         _unitOfWork = unitOfWork;
         _auditLogService = auditLogService;
+        _currentUserContext = currentUserContext;
     }
 
     public async Task<ApiResponseDto<PagedResultDto<LocationDto>>> GetPagedLocationsAsync(
@@ -140,7 +143,7 @@ public class LocationService : ILocationService
                 try
                 {
                     await _auditLogService.LogAsync(
-                        actorAccountId: null,
+                        actorAccountId: _currentUserContext?.UserId,
                         action: "CREATE_LOCATION",
                         entityType: "Location",
                         entityId: newLocation.LocationId.ToString(),
@@ -236,7 +239,7 @@ public class LocationService : ILocationService
                 try
                 {
                     await _auditLogService.LogAsync(
-                        actorAccountId: null,
+                        actorAccountId: _currentUserContext?.UserId,
                         action: "UPDATE_LOCATION",
                         entityType: "Location",
                         entityId: location.LocationId.ToString(),
@@ -305,7 +308,7 @@ public class LocationService : ILocationService
                 try
                 {
                     await _auditLogService.LogAsync(
-                        actorAccountId: null,
+                        actorAccountId: _currentUserContext?.UserId,
                         action: "DELETE_LOCATION",
                         entityType: "Location",
                         entityId: locationId.ToString(),

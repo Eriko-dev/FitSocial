@@ -7,6 +7,8 @@
 @using FitSocial.Client.Services.Users
 @inject IUserService UserService
 @inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthStateProvider
+@using Microsoft.AspNetCore.Components.Authorization
 
 <PageTitle>User Accounts - FitConnect Management Portal</PageTitle>
 
@@ -90,13 +92,24 @@
                                 }
                             </td>
                             <td class="text-end">
-                                @if (u.IsLocked)
+                                @if (string.Equals(u.RoleCode, "ADMIN", StringComparison.OrdinalIgnoreCase))
                                 {
-                                    <button type="button" class="row-btn unlock" disabled="@isLockingUser" @onclick="() => SetLockedAsync(u, false)">Unlock</button>
+                                    <span class="muted">-</span>
+                                }
+                                else if (string.Equals(u.RoleCode, "STAFF", StringComparison.OrdinalIgnoreCase) && !isAdmin)
+                                {
+                                    <span class="muted" title="Only administrators can lock or unlock staff accounts.">-</span>
                                 }
                                 else
                                 {
-                                    <button type="button" class="row-btn lock" disabled="@isLockingUser" @onclick="() => SetLockedAsync(u, true)">Lock</button>
+                                    @if (u.IsLocked)
+                                    {
+                                        <button type="button" class="row-btn unlock" disabled="@isLockingUser" @onclick="() => SetLockedAsync(u, false)">Unlock</button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" class="row-btn lock" disabled="@isLockingUser" @onclick="() => SetLockedAsync(u, true)">Lock</button>
+                                    }
                                 }
                             </td>
                         </tr>
@@ -149,8 +162,14 @@
     private System.Timers.Timer? searchDebounceTimer;
     private bool isLoadingUsers = false;
     private bool isLockingUser = false;
+    private bool isAdmin = false;
 
-    protected override async Task OnInitializedAsync() => await LoadUsersAsync();
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        isAdmin = authState.User.IsInRole("ADMIN");
+        await LoadUsersAsync();
+    }
 
     private async Task LoadUsersAsync()
     {
