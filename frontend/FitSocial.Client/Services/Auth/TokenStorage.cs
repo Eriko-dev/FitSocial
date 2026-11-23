@@ -13,10 +13,6 @@ public interface ITokenStorage
     Task RemoveItemAsync(string key);
 }
 
-/// <summary>
-/// Token store honoring "Remember me": localStorage when remembered,
-/// sessionStorage (cleared when the tab/browser closes) otherwise.
-/// </summary>
 public class BrowserTokenStorage : ITokenStorage
 {
     private const string RememberKey = "rememberMe";
@@ -70,7 +66,6 @@ public class BrowserTokenStorage : ITokenStorage
         }
         catch (Exception ex)
         {
-            // Non-fatal: preference simply won't persist across restarts.
             _logger.LogWarning(ex, "Could not persist the remember-me preference.");
         }
     }
@@ -107,7 +102,6 @@ public class BrowserTokenStorage : ITokenStorage
         }
         catch (Exception ex)
         {
-            // If session storage is unavailable, fall back to local storage.
             _logger.LogWarning(ex, "Session storage write failed for '{Key}'. Falling back to local storage.", key);
             await _localStorage.SetItemAsync(key, value);
         }

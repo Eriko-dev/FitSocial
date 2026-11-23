@@ -13,7 +13,6 @@
     [SupplyParameterFromQuery(Name = "state")]
     public string? State { get; set; }
 
-    // Invisible pass-through: success -> home, failure -> login with the error message.
     protected override async Task OnInitializedAsync()
     {
         if (!string.IsNullOrEmpty(Error))
@@ -29,7 +28,7 @@
         }
 
         var rolePart = State?.Split('.')[0];
-        var role = (rolePart == "COACH" || rolePart == "TRAINEE") ? rolePart : null;
+        var role = rolePart == "TRAINEE" ? "TRAINEE" : null;
         var redirectUri = Navigation.BaseUri.TrimEnd('/') + "/login-callback";
 
         var result = await AuthService.LoginWithGoogleCodeAsync(Code, role, redirectUri);
@@ -42,6 +41,16 @@
             if (result.Data?.IsBlockedDueToReports == true && !string.IsNullOrWhiteSpace(result.Data.AppealToken))
             {
                 Navigation.NavigateTo($"/appeal?token={Uri.EscapeDataString(result.Data.AppealToken)}");
+                return;
+            }
+            if (result.Data?.IsPaymentPending == true ||
+                (result.Message != null && result.Message.Contains("Payment required", StringComparison.OrdinalIgnoreCase)))
+            {
+                var email = result.Data?.User?.Email;
+                var url = string.IsNullOrWhiteSpace(email)
+                    ? "/coach-activation"
+                    : $"/coach-activation?email={Uri.EscapeDataString(email)}";
+                Navigation.NavigateTo(url, forceLoad: true);
                 return;
             }
             GoLogin(result.Message ?? "Google sign-in failed. Please try again.");

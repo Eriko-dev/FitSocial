@@ -16,7 +16,6 @@
 </div>
 
 <div class="reg-card">
-    <!-- Google (redirect flow, works in Guest/Incognito) -->
     <button type="button" class="btn-google" @onclick="HandleGoogleButtonAsync">
         <AppIcon Name="google" /><span>Sign in with Google</span>
     </button>
@@ -152,14 +151,11 @@
     {
         rememberMe = await TokenStorage.GetRememberMeAsync();
 
-        // Error forwarded from /login-callback (Google round-trip loses in-memory state)
         if (!string.IsNullOrWhiteSpace(AuthError))
         {
             errorMessage = AuthError;
         }
 
-        // Already signed in -> skip the login page, routing by CURRENT role
-        // (an admin revisiting /login must go back to /admin, never to home)
         if (await AuthService.IsAuthenticatedAsync())
         {
             NavigateAfterLogin(await GetCurrentRoleAsync());
@@ -212,20 +208,42 @@
 
     private void NavigateAfterLogin(string? roleCode = null)
     {
-        bool isBackOffice = string.Equals(roleCode?.Trim(), AppRoles.Admin, StringComparison.OrdinalIgnoreCase)
-            || string.Equals(roleCode?.Trim(), AppRoles.Staff, StringComparison.OrdinalIgnoreCase);
+        var normalizedRole = roleCode?.Trim();
+        bool isAdmin = string.Equals(normalizedRole, AppRoles.Admin, StringComparison.OrdinalIgnoreCase);
+        bool isStaff = string.Equals(normalizedRole, AppRoles.Staff, StringComparison.OrdinalIgnoreCase);
+        bool isBackOffice = isAdmin || isStaff;
 
         if (IsSafeLocalUrl(ReturnUrl))
         {
-            bool wantsAdminArea = ReturnUrl!.TrimStart('/').StartsWith("admin", StringComparison.OrdinalIgnoreCase);
+            var cleanReturnUrl = ReturnUrl!.TrimStart('/');
+            bool wantsAdminArea = cleanReturnUrl.StartsWith("admin", StringComparison.OrdinalIgnoreCase);
+
             if (wantsAdminArea == isBackOffice)
             {
-                Navigation.NavigateTo(ReturnUrl);
-                return;
+                bool isAdminRootOnly = isStaff && (
+                    cleanReturnUrl.Equals("admin", StringComparison.OrdinalIgnoreCase) ||
+                    cleanReturnUrl.Equals("admin/", StringComparison.OrdinalIgnoreCase));
+
+                if (!isAdminRootOnly)
+                {
+                    Navigation.NavigateTo(ReturnUrl);
+                    return;
+                }
             }
         }
 
-        Navigation.NavigateTo(isBackOffice ? "/admin" : "home");
+        if (isAdmin)
+        {
+            Navigation.NavigateTo("/admin");
+        }
+        else if (isStaff)
+        {
+            Navigation.NavigateTo("/admin/users");
+        }
+        else
+        {
+            Navigation.NavigateTo("/home");
+        }
     }
 
     private async Task HandleLogin()
@@ -236,7 +254,6 @@
 
         await TokenStorage.SetRememberMeAsync(rememberMe);
 
-        // Shared login for all roles: no RoleCode sent, backend skips the role check
         loginModel.RoleCode = null;
         loginModel.RememberMe = rememberMe;
         var result = await AuthService.LoginAsync(loginModel);

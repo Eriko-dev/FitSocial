@@ -694,6 +694,27 @@ public class AuthService : IAuthService
                         Data = blockedData
                     };
                 }
+                if (string.Equals(user.RoleCode?.Trim(), RoleConstants.Coach, StringComparison.OrdinalIgnoreCase))
+                {
+                    var hasActiveSubscription = false;
+                    if (_coachUpgrades != null)
+                    {
+                        var latestUpgrade = await _coachUpgrades.GetLatestFinishedByCoachIdAsync(user.UserId);
+                        hasActiveSubscription = latestUpgrade != null && latestUpgrade.Status == "ACTIVE";
+                    }
+                    if (!hasActiveSubscription)
+                    {
+                        return ApiResponseDto<AuthResponseDto>.Fail("Payment required to activate your coach account.");
+                    }
+
+                    var profile = await _coachProfiles.GetByIdAsync(user.UserId);
+                    var approval = profile?.ApprovalStatus?.Trim().ToUpperInvariant();
+                    if (approval == "PENDING")
+                        return ApiResponseDto<AuthResponseDto>.Fail("Your account application is currently under credential verification. Please check back later.");
+                    if (approval == "REJECTED")
+                        return ApiResponseDto<AuthResponseDto>.Fail("Your coach application has been rejected. Please check your email for details and resubmission instructions.");
+                }
+
                 return ApiResponseDto<AuthResponseDto>.Fail("This account has been locked. Please contact an administrator.");
             }
 

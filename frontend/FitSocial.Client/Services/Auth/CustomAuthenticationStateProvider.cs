@@ -30,8 +30,6 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
                 return new AuthenticationState(Anonymous);
             }
 
-            // Production: if the 15-min access token is expired (or expiring within 60s),
-            // try a silent refresh with the stored refresh token before declaring anonymous.
             if (IsTokenExpired(token, TimeSpan.FromSeconds(60)))
             {
                 token = await TrySilentRefreshAsync() ?? "";
@@ -135,7 +133,6 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
         {
             var key = kvp.Key;
 
-            // Normalize the role claim type so Blazor IsInRole and [Authorize(Roles="...")] work correctly
             if (key.Equals("role", StringComparison.OrdinalIgnoreCase) || 
                 key.Equals("roles", StringComparison.OrdinalIgnoreCase) ||
                 key.Equals(ClaimTypes.Role, StringComparison.OrdinalIgnoreCase))
@@ -176,18 +173,10 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
         return claims;
     }
 
-    /// <summary>
-    /// Decodes a Base64Url-encoded string (used by JWTs) to bytes.
-    /// JWTs use Base64Url encoding (RFC 7519): '-' replaces '+', '_' replaces '/',
-    /// and padding is omitted. This method converts back to standard Base64 before decoding,
-    /// otherwise Convert.FromBase64String throws on '-' or '_' characters.
-    /// </summary>
     private static byte[] DecodeBase64Url(string base64Url)
     {
-        // Convert Base64Url to standard Base64
         var base64 = base64Url.Replace('-', '+').Replace('_', '/');
 
-        // Restore padding
         switch (base64.Length % 4)
         {
             case 2: base64 += "=="; break;

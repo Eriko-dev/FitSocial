@@ -120,18 +120,15 @@
 
                 if (string.Equals(role?.Trim(), AppRoles.Admin, StringComparison.OrdinalIgnoreCase))
                 {
-                    // Admin -> Revenue Analytics dashboard
                     Navigation.NavigateTo("/admin");
                 }
                 else if (string.Equals(role?.Trim(), AppRoles.Staff, StringComparison.OrdinalIgnoreCase))
                 {
-                    // Staff -> User Accounts (first page)
                     Navigation.NavigateTo("/admin/users");
                 }
                 else
                 {
-                    // Fallback to shared user management
-                    Navigation.NavigateTo("/admin/users");
+                    Navigation.NavigateTo("/home");
                 }
             }
             else

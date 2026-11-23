@@ -249,10 +249,6 @@ public class UserService : IUserService
             avatarUrl = user.AvatarUrl
         };
 
-        // Rule (UC_35.1):
-        // Field không nhập / để trống -> giữ nguyên dữ liệu cũ trong database.
-        // Field có nhập -> validate nghiêm ngặt; nếu hợp lệ mới cập nhật.
-
         // 1. FullName
         if (!string.IsNullOrWhiteSpace(request.FullName))
         {
