@@ -1,11 +1,9 @@
 @page "/admin/payouts"
 @layout AdminLayout
 @attribute [Authorize(Roles = "ADMIN,STAFF")]
-@using FitSocial.Client.Models.Common
 @using FitSocial.Client.Models.Payouts
 @using FitSocial.Client.Services.Payouts
 @inject IPayoutService PayoutService
-@inject NavigationManager Navigation
 
 <PageTitle>Coach Payouts - FitConnect Management Portal</PageTitle>
 
@@ -286,10 +284,10 @@
                             </div>
                         }
 
-                        @if (PendingRefunds().Count > 0)
+                        @if (PendingRefundsList.Count > 0)
                         {
                             <div class="muted-sm" style="margin:6px 0;">
-                                Refund adjustments (@PendingRefunds().Count): −@PendingRefunds().Sum(i => i.RefundAdjustment).ToString("N0") VND (deducted on pay)
+                                Refund adjustments (@PendingRefundsList.Count): −@PendingRefundsList.Sum(i => i.RefundAdjustment).ToString("N0") VND (deducted on pay)
                             </div>
                         }
 
@@ -335,14 +333,6 @@
         pageIndex = Math.Clamp(page, 1, totalPages);
     }
 
-    private void OnPageSizeChanged(ChangeEventArgs e)
-    {
-        if (int.TryParse(e.Value?.ToString(), out var size) && size > 0)
-        {
-            pageSize = size;
-        }
-        pageIndex = 1;
-    }
     private bool isLoading = true;
     private bool isGenerating = false;
     private string statusFilter = "";
@@ -508,6 +498,8 @@
         return detail.Items.Where(i => !i.IsPaid && i.GrossAmount <= 0 && i.RefundAdjustment > 0).ToList();
     }
 
+    private List<PayoutItem> PendingRefundsList => PendingRefunds();
+
     private async Task RefreshDetailAsync()
     {
         if (detail == null) return;
@@ -555,7 +547,7 @@
 
     private async Task HandlePayMonthAsync(VestingMonth m)
     {
-        if (detail == null || isProcessing) return;
+        if (detail == null || isProcessing || !detail.CanProcess) return;
         if (!m.CanPay || !m.PayoutId.HasValue || !m.PayoutItemId.HasValue) return;
         isProcessing = true;
         modalError = null;

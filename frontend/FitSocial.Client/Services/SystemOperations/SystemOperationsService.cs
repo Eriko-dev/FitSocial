@@ -5,28 +5,6 @@ using FitSocial.Client.Models.SystemOperations;
 
 namespace FitSocial.Client.Services.SystemOperations;
 
-public class CreatePlanRequest
-{
-    public decimal Amount { get; set; }
-    public string Currency { get; set; } = "VND";
-    public bool IsActive { get; set; } = true;
-    public string? ImageUrl { get; set; }
-    public string? Description { get; set; }
-    public int? SubscriptionDuration { get; set; }
-    public int? TrainingPackageDuration { get; set; }
-}
-
-public class UpdatePlanRequest
-{
-    public decimal? Amount { get; set; }
-    public string? Currency { get; set; } = "VND";
-    public string? ImageUrl { get; set; }
-    public string? Description { get; set; }
-    public int? SubscriptionDuration { get; set; }
-    public int? TrainingPackageDuration { get; set; }
-    public bool? IsActive { get; set; }
-}
-
 public interface ISystemOperationsService
 {
     Task<ApiResponse<CoachSubscriptionPlansResponseDto>> GetCoachSubscriptionPlansAsync(bool? isActive = null, string? search = null, int page = 1, int pageSize = 20);
@@ -138,10 +116,6 @@ public class SystemOperationsService : ISystemOperationsService
     {
         try
         {
-            // Public plans endpoint (proper CoachSubscriptionPlansId). The old
-            // system-operations/.../active endpoint returned the admin DTO whose
-            // PriceId is the Price FK, which broke plan lookup at payment time.
-            // NOTE: controller route is api/CoachSubscriptionPlans (no hyphens).
             var resp = await _http.GetAsync("coachsubscriptionplans");
             var raw = await resp.Content.ReadAsStringAsync();
             var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };

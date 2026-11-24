@@ -4,7 +4,6 @@
 @implements IDisposable
 @inject IAuthService AuthService
 @inject PendingCoachRegistration PendingCoach
-@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
 @inject ITermsService TermsService
 @inject IEkycService EkycService
 @inject IPaymentService PaymentService
@@ -143,7 +142,10 @@ else if (coachStep == 3)
             <div class="cert-row">
                 <div class="cert-row-header">
                     <strong>Certificate @(certIndex + 1)</strong>
-                    <button type="button" class="btn-remove-cert" @onclick="() => RemoveCertificate(cert)">✕ Remove</button>
+                    @if (coachModel.Certificates.Count > 1)
+                    {
+                        <button type="button" class="btn-remove-cert" @onclick="() => RemoveCertificate(cert)">✕ Remove</button>
+                    }
                 </div>
                 <div class="field">
                     <label>Certificate name <span class="req">*</span></label>
@@ -304,6 +306,7 @@ else if (coachStep == 5)
     private ActivationLink? activation;
     private Timer? paymentPollTimer;
     private bool isPollingPayment = false;
+    private bool isCheckingPayment = false;
     private int pollAttempts = 0;
 
     private List<FitSocial.Client.Models.SystemOperations.CoachSubscriptionPlanDto> availablePlans = new();
@@ -341,12 +344,7 @@ else if (coachStep == 5)
     {
         try { latestTerm = await TermsService.GetLatestAsync(); } catch { }
         await LoadActivePlansAsync();
-        var defaultPlan = availablePlans.FirstOrDefault(p => p.PlanId == coachModel.CoachSubscriptionPlansId) ?? availablePlans.FirstOrDefault();
-        if (defaultPlan != null)
-        {
-            coachModel.CoachSubscriptionPlansId ??= defaultPlan.PlanId;
-            if (defaultPlan.Amount != null) previewAmount = defaultPlan.Amount.Value.ToString("N0");
-        }
+        ApplyDefaultPlanIfNeeded();
     }
 
     private async Task LoadActivePlansAsync()
@@ -371,6 +369,18 @@ else if (coachStep == 5)
 
     private void AddCertificate() { coachModel.Certificates.Add(new CoachCertificateItem()); }
     private void RemoveCertificate(CoachCertificateItem c) { coachModel.Certificates.Remove(c); }
+
+    private void ApplyDefaultPlanIfNeeded()
+    {
+        var selected = availablePlans.FirstOrDefault(p => p.PlanId == coachModel.CoachSubscriptionPlansId)
+                       ?? availablePlans.FirstOrDefault();
+        if (selected != null)
+        {
+            coachModel.CoachSubscriptionPlansId ??= selected.PlanId;
+            if (selected.Amount != null)
+                previewAmount = selected.Amount.Value.ToString("N0");
+        }
+    }
 
     private async Task HandleSendOtp()
     {
@@ -434,7 +444,8 @@ else if (coachStep == 5)
                 err.Contains("403") ||
                 err.Contains("Raw:", StringComparison.OrdinalIgnoreCase) ||
                 err.Contains("upgrade your package", StringComparison.OrdinalIgnoreCase) ||
-                err.Contains("Hạn mức", StringComparison.OrdinalIgnoreCase))
+                err.Contains("quota", StringComparison.OrdinalIgnoreCase) ||
+                err.Contains("limit exceeded", StringComparison.OrdinalIgnoreCase))
             {
                 err = "Identity verification service is temporarily unavailable. Please try again later or contact support.";
             }
@@ -448,7 +459,6 @@ else if (coachStep == 5)
         showCoachErrors = false;
         showTermsError = false;
         coachStep = 3;
-        if (latestTerm == null) latestTerm = await TermsService.GetLatestAsync();
     }
 
     private void HandleCertificatesNext()
@@ -457,12 +467,7 @@ else if (coachStep == 5)
         errorMessage = null;
         if (!(coachModel.ExperienceYears >= 0 && coachModel.ExperienceYears <= 60)) { errorMessage = "Please enter years of experience (0-60)."; return; }
         if (!coachModel.Certificates.Any(c => !string.IsNullOrWhiteSpace(c.CertificateUrl))) { errorMessage = "Please upload at least one certificate."; return; }
-        var selected = availablePlans.FirstOrDefault(p => p.PlanId == coachModel.CoachSubscriptionPlansId) ?? availablePlans.FirstOrDefault();
-        if (selected != null)
-        {
-            coachModel.CoachSubscriptionPlansId ??= selected.PlanId;
-            if (selected.Amount != null) previewAmount = selected.Amount.Value.ToString("N0");
-        }
+        ApplyDefaultPlanIfNeeded();
         coachStep = 4;
     }
 
@@ -487,7 +492,6 @@ else if (coachStep == 5)
         coachModel.TermId = latestTerm.TermId;
         isLoading = true;
         PendingCoach.Draft = coachModel;
-        await LocalStorage.SetItemAsync("pendingCoachDraft", coachModel);
         var link = await PaymentService.CreateActivationLinkAsync(coachModel);
         if (!link.Success || link.Data == null)
         {
@@ -524,11 +528,12 @@ else if (coachStep == 5)
 
     private async Task AutoCheckPaymentAsync()
     {
-        if (activation == null || !isPollingPayment) return;
-        pollAttempts++;
-        await InvokeAsync(StateHasChanged);
+        if (activation == null || !isPollingPayment || isCheckingPayment) return;
+        isCheckingPayment = true;
         try
         {
+            pollAttempts++;
+            await InvokeAsync(StateHasChanged);
             var res = await PaymentService.CompleteActivationAsync(activation.OrderCode);
             if (res.Success)
             {
@@ -540,17 +545,29 @@ else if (coachStep == 5)
             }
         }
         catch { }
-        await InvokeAsync(StateHasChanged);
+        finally
+        {
+            isCheckingPayment = false;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     private async Task HandleVerifyPaidAsync()
     {
-        if (activation == null) return;
+        if (activation == null || isCheckingPayment) return;
+        isCheckingPayment = true;
         isLoading = true; errorMessage = null;
-        var res = await PaymentService.CompleteActivationAsync(activation.OrderCode);
-        if (res.Success) { StopPaymentPolling(); successMessage = "Payment successful! Coach account created. Redirecting to login..."; await Task.Delay(1500); Navigation.NavigateTo("/login"); }
-        else errorMessage = res.Message ?? "Payment not completed yet.";
-        isLoading = false;
+        try
+        {
+            var res = await PaymentService.CompleteActivationAsync(activation.OrderCode);
+            if (res.Success) { StopPaymentPolling(); successMessage = "Payment successful! Coach account created. Redirecting to login..."; await Task.Delay(1500); Navigation.NavigateTo("/login"); }
+            else errorMessage = res.Message ?? "Payment not completed yet.";
+        }
+        finally
+        {
+            isLoading = false;
+            isCheckingPayment = false;
+        }
     }
 
     private async Task HandleCancelOrderAsync()

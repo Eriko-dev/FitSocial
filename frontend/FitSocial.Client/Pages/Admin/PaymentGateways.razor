@@ -201,7 +201,7 @@
             </div>
         }
 
-        <!-- UC-36.2 Add Gateway popup -->
+        <!-- Add Gateway popup -->
         @if (showAddModal)
         {
             <div class="modal-backdrop" @onclick="CloseAddModal">
@@ -234,8 +234,8 @@
                         <label class="form-field">
                             <span>Channel *</span>
                             <select class="form-input" @bind="addChannel">
-                                <option value="thu">Collection</option>
-                                <option value="chi">Payout</option>
+                                <option value="collect">Collection</option>
+                                <option value="payout">Payout</option>
                             </select>
                         </label>
                         <p class="muted-sm">New gateways start as Inactive (only one active gateway per channel). It becomes Active automatically if no other gateway of the same channel is active.</p>
@@ -254,7 +254,7 @@
             </div>
         }
 
-        <!-- UC-36.3 Edit Gateway popup -->
+        <!-- Edit Gateway popup -->
         @if (editGateway != null)
         {
             <div class="modal-backdrop" @onclick="CloseEditModal">
@@ -287,8 +287,8 @@
                         <label class="form-field">
                             <span>Channel *</span>
                             <select class="form-input" @bind="editChannel">
-                                <option value="thu">Collection</option>
-                                <option value="chi">Payout</option>
+                                <option value="collect">Collection</option>
+                                <option value="payout">Payout</option>
                             </select>
                         </label>
                         <label class="form-check">
@@ -339,13 +339,13 @@
     private string editChecksumKey = "";
     private string editWebhookUrl = "";
     private bool editIsActive = true;
-    private string editChannel = "thu";
+    private string editChannel = "collect";
     private string newGatewayName = "";
     private string newClientId = "";
     private string newApiKey = "";
     private string newChecksumKey = "";
     private string newWebhookUrl = "";
-    private string addChannel = "thu";
+    private string addChannel = "collect";
 
     private List<PaymentGatewayConfig> FilteredGateways =>
         gateways
@@ -364,15 +364,6 @@
     {
         var totalPages = Math.Max(1, (int)Math.Ceiling(FilteredGateways.Count / (double)pageSize));
         pageIndex = Math.Clamp(page, 1, totalPages);
-    }
-
-    private void OnPageSizeChanged(ChangeEventArgs e)
-    {
-        if (int.TryParse(e.Value?.ToString(), out var size) && size > 0)
-        {
-            pageSize = size;
-        }
-        pageIndex = 1;
     }
 
     protected override async Task OnInitializedAsync()
@@ -396,7 +387,7 @@
                 toastMessage = res.Message ?? "Failed to load payment gateways.";
                 toastType = "error";
             }
-            var maxPage = Math.Max(1, (int)Math.Ceiling(gateways.Count / (double)pageSize));
+            var maxPage = Math.Max(1, (int)Math.Ceiling(FilteredGateways.Count / (double)pageSize));
             if (pageIndex > maxPage) pageIndex = maxPage;
         }
         catch (Exception ex)
@@ -498,7 +489,7 @@
         newApiKey = "";
         newChecksumKey = "";
         newWebhookUrl = "";
-        addChannel = channelTab == "payout" ? "chi" : "thu";
+        addChannel = channelTab == "payout" ? "payout" : "collect";
     }
 
     private void CloseAddModal()
@@ -530,8 +521,8 @@
                 ApiKey = newApiKey.Trim(),
                 ChecksumKey = newChecksumKey.Trim(),
                 WebhookUrl = string.IsNullOrWhiteSpace(newWebhookUrl) ? null : newWebhookUrl.Trim(),
-                IsActive = false, // server enforces single-active per channel
-                IsPayout = addChannel == "chi"
+                IsActive = false, 
+                IsPayout = addChannel == "payout"
             });
 
             if (res.Success)
@@ -567,7 +558,7 @@
         editChecksumKey = "";
         editWebhookUrl = gateway.WebhookUrl ?? "";
         editIsActive = gateway.IsActive;
-        editChannel = gateway.IsPayout ? "chi" : "thu";
+        editChannel = gateway.IsPayout ? "payout" : "collect";
     }
 
     private void CloseEditModal()
@@ -600,7 +591,7 @@
                 ChecksumKey = string.IsNullOrWhiteSpace(editChecksumKey) ? null : editChecksumKey.Trim(),
                 WebhookUrl = string.IsNullOrWhiteSpace(editWebhookUrl) ? null : editWebhookUrl.Trim(),
                 IsActive = editIsActive,
-                IsPayout = editChannel == "chi"
+                IsPayout = editChannel == "payout"
             });
 
             if (res.Success)

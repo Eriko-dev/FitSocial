@@ -182,7 +182,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Khôi phục draft từ localStorage nếu reload trang (mất state in-memory)
         if (!PendingCoach.HasDraft || PendingCoach.Draft == null)
         {
             try
@@ -196,14 +195,12 @@
             catch { }
         }
 
-        // Guard: no draft means the user opened this URL directly
         if (!PendingCoach.HasDraft || PendingCoach.Draft == null)
         {
             Navigation.NavigateTo("/register");
             return;
         }
 
-        // Validate the draft server-side BEFORE paying (model + email availability)
         var result = await PaymentService.PrepareCoachActivationAsync(PendingCoach.Draft);
         if (result.Success && result.Data != null)
         {
@@ -216,7 +213,6 @@
 
         isLoadingPreview = false;
 
-        // Khôi phục activation từ localStorage nếu reload trang
         try
         {
             var savedActivation = await LocalStorage.GetItemAsync<ActivationLink>("pendingCoachActivation");
@@ -228,7 +224,6 @@
 
     private void GoBack()
     {
-        // Draft stays in PendingCoachRegistration, Register restores it
         Navigation.NavigateTo("/register");
     }
 
@@ -246,7 +241,6 @@
         processingText = "Creating VietQR code...";
         StateHasChanged();
 
-        // Backend verifies OTP, locks in the draft and returns the VietQR payload
         var link = await PaymentService.CreateActivationLinkAsync(PendingCoach.Draft);
         if (!link.Success || link.Data == null || string.IsNullOrWhiteSpace(link.Data.QrCode))
         {

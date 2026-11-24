@@ -131,7 +131,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Nếu reload trang, thử khôi phục đơn đang chờ từ localStorage
         try
         {
             var saved = await LocalStorage.GetItemAsync<ActivationLink>("pendingRenewalActivation");

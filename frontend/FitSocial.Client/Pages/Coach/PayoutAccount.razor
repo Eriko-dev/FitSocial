@@ -205,13 +205,11 @@
     private string errorMessage = "";
     private string successMessage = "";
 
-    // Bank Dropdown State
     private List<BankItemDto> allBanks = new();
     private List<BankItemDto> filteredBanks = new();
     private string bankSearchTerm = "";
     private bool isBankDropdownOpen = false;
 
-    // Header State
     private string? headerSearchTerm = "";
     private string userName = "Coach";
     private string userInitials = "C";
@@ -219,7 +217,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Topbar rendered by AppShellLayout: this page only uses search term, no separate callback.
         Shell.SearchTerm = headerSearchTerm ?? string.Empty;
 
         await LoadUserInfoAsync();
@@ -314,7 +311,6 @@
         errorMessage = "";
         successMessage = "";
 
-        // Normalize whitespace and convert to uppercase
         if (!string.IsNullOrWhiteSpace(accountForm.AccountNumber))
         {
             accountForm.AccountNumber = accountForm.AccountNumber.Replace(" ", "").Replace("-", "").Trim();
@@ -329,12 +325,10 @@
 
         if (hasExistingAccount && existingBankId.HasValue)
         {
-            // UPDATE EXISTING ACCOUNT INSTEAD OF CREATING NEW
             response = await CoachService.UpdateBankAccountAsync(existingBankId.Value, accountForm);
         }
         else
         {
-            // CREATE NEW ACCOUNT IF NOT EXISTS
             response = await CoachService.AddBankAccountAsync(accountForm);
         }
 

@@ -26,7 +26,6 @@ public class EkycService : IEkycService
             var raw = await resp.Content.ReadAsStringAsync();
             if (resp.IsSuccessStatusCode)
             {
-                // backend returns {success, data: EkycExtract}
                 var doc = System.Text.Json.JsonDocument.Parse(raw);
                 if (doc.RootElement.TryGetProperty("data", out var dataEl))
                 {
