@@ -33,6 +33,9 @@
             <button type="button" class="cat-tab @(statusFilter == "APPROVED" ? "active" : "")" @onclick='() => SetStatusFilterAsync("APPROVED")'>
                 <span class="status-dot dot-approved"></span> Approved
             </button>
+            <button type="button" class="cat-tab @(statusFilter == "DISBURSEMENT_FAILED" ? "active" : "")" @onclick='() => SetStatusFilterAsync("DISBURSEMENT_FAILED")'>
+                <span class="status-dot dot-failed"></span> Transfer Failed
+            </button>
             <button type="button" class="cat-tab @(statusFilter == "REJECTED" ? "active" : "")" @onclick='() => SetStatusFilterAsync("REJECTED")'>
                 <span class="status-dot dot-rejected"></span> Rejected
             </button>
@@ -168,6 +171,11 @@
                                                 <span class="badge-dot dot-approved"></span> Approved
                                             </span>
                                             break;
+                                        case "DISBURSEMENT_FAILED":
+                                            <span class="badge badge-failed" title="Staff approved, but automated bank disbursement failed">
+                                                <span class="badge-dot dot-failed"></span> Transfer Failed
+                                            </span>
+                                            break;
                                         case "REJECTED":
                                             <span class="badge badge-rejected">
                                                 <span class="badge-dot dot-rejected"></span> Rejected
@@ -203,6 +211,12 @@
                                             </button>
                                             <button type="button" class="btn-action btn-reject" title="Reject Refund" @onclick="() => OpenRejectModal(r)">
                                                 Reject
+                                            </button>
+                                        }
+                                        else if (string.Equals(r.Status, "DISBURSEMENT_FAILED", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            <button type="button" class="btn-action btn-retry" title="Retry bank disbursement" @onclick="() => HandleRetryDisbursementAsync(r)" disabled="@isProcessing">
+                                                Retry Transfer
                                             </button>
                                         }
                                     </div>
@@ -504,6 +518,12 @@
                             </button>
                             <button type="button" class="modal-btn modal-btn-approve" @onclick="() => OpenApproveModal(selectedRefund)">
                                 Approve Refund
+                            </button>
+                        }
+                        else if (string.Equals(selectedRefund.Status, "DISBURSEMENT_FAILED", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <button type="button" class="modal-btn modal-btn-approve" @onclick="() => HandleRetryDisbursementAsync(selectedRefund)" disabled="@isProcessing">
+                                @(isProcessing ? "Retrying..." : "Retry Transfer")
                             </button>
                         }
                     </div>
@@ -1072,16 +1092,26 @@
                 var targetId = selectedRefund.RefundRequestId;
                 var approvedAmt = req.ApprovedAmount;
                 var found = pagedRefunds?.Items?.FirstOrDefault(x => x.RefundRequestId == targetId);
+                var isFailedDisbursement = string.Equals(response.Data?.Status, "DISBURSEMENT_FAILED", StringComparison.OrdinalIgnoreCase);
                 if (found != null)
                 {
-                    found.Status = "APPROVED";
-                    found.ApprovedAmount = approvedAmt;
+                    found.Status = response.Data?.Status ?? (isFailedDisbursement ? "DISBURSEMENT_FAILED" : "APPROVED");
+                    found.ApprovedAmount = response.Data?.ApprovedAmount ?? approvedAmt;
                     found.ReviewedAt = DateTime.UtcNow;
                 }
 
-                processingTitle = "Refund Approved & Disbursed!";
-                processingDescription = "Bank transfer completed successfully. Refreshing requests list...";
-                processingSubtext = "Finalizing in a moment...";
+                if (isFailedDisbursement)
+                {
+                    processingTitle = "Refund Approved - Transfer Failed";
+                    processingDescription = response.Message ?? "Bank transfer failed. You can retry the transfer from the list.";
+                    processingSubtext = "Action saved. Refreshing...";
+                }
+                else
+                {
+                    processingTitle = "Refund Approved & Disbursed!";
+                    processingDescription = "Bank transfer completed successfully. Refreshing requests list...";
+                    processingSubtext = "Finalizing in a moment...";
+                }
                 StateHasChanged();
 
                 isApproveModalOpen = false;
@@ -1089,7 +1119,14 @@
 
                 await LoadRefundRequestsAsync(isSilent: true);
 
-                ToastService.ShowSuccess("Refund request approved and disbursed successfully.");
+                if (isFailedDisbursement)
+                {
+                    ToastService.ShowWarning(response.Message ?? "Refund approved, but bank transfer failed. Please retry.");
+                }
+                else
+                {
+                    ToastService.ShowSuccess("Refund request approved and disbursed successfully.");
+                }
             }
             else
             {
@@ -1105,6 +1142,61 @@
             isProcessing = false;
             isProcessingAction = false;
             selectedRefund = null;
+            LoadingService.Hide();
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleRetryDisbursementAsync(RefundRequestItem item)
+    {
+        if (item == null || isProcessing) return;
+
+        isProcessing = true;
+        isProcessingAction = true;
+        processingTitle = "Retrying Bank Transfer...";
+        LoadingService.Show("Retrying automated bank disbursement...");
+        var amountStr = FormatCurrency(item.ApprovedAmount ?? item.RequestedAmount ?? 0);
+        var bankTarget = !string.IsNullOrWhiteSpace(item.BankName)
+            ? $"to {item.BankName} ({item.MaskedAccountNumber})"
+            : "";
+        processingDescription = $"Re-submitting transfer instruction for {amountStr} {bankTarget} via interbank gateway.";
+        processingSubtext = "Please wait while the gateway processes the payout...";
+        StateHasChanged();
+
+        try
+        {
+            var response = await RefundService.RetryDisbursementAsync(item.RefundRequestId);
+            if (response.Success)
+            {
+                var found = pagedRefunds?.Items?.FirstOrDefault(x => x.RefundRequestId == item.RefundRequestId);
+                if (found != null)
+                {
+                    found.Status = "APPROVED";
+                    found.RefundedAt = DateTime.UtcNow;
+                }
+
+                processingTitle = "Disbursement Succeeded!";
+                processingDescription = "Funds have been transferred to trainee bank account successfully.";
+                processingSubtext = "Refreshing...";
+                StateHasChanged();
+
+                isDetailModalOpen = false;
+                await LoadRefundRequestsAsync(isSilent: true);
+                ToastService.ShowSuccess("Bank disbursement retry succeeded.");
+            }
+            else
+            {
+                ToastService.ShowError(response.Message ?? "Retry bank disbursement failed.");
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Error retrying disbursement: {ex.Message}");
+        }
+        finally
+        {
+            isProcessing = false;
+            isProcessingAction = false;
             LoadingService.Hide();
             StateHasChanged();
         }
