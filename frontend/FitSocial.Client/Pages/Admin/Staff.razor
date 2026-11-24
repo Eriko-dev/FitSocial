@@ -209,7 +209,7 @@
 
                             <div class="form-group">
                                 <label class="form-label" for="staff-password">Password <span class="text-danger">*</span></label>
-                                <input id="staff-password" type="password" @bind="newStaffModel.Password" class="toolbar-input" placeholder="At least 6 characters" autocomplete="new-password" disabled="@isSubmitting" />
+                                <input id="staff-password" type="password" @bind="newStaffModel.Password" class="toolbar-input" placeholder="At least 8 characters" autocomplete="new-password" disabled="@isSubmitting" />
                             </div>
 
                             <div class="form-group">
@@ -672,9 +672,9 @@
             }
         }
 
-        if (string.IsNullOrWhiteSpace(newStaffModel.Password) || newStaffModel.Password.Length < 6)
+        if (string.IsNullOrWhiteSpace(newStaffModel.Password) || newStaffModel.Password.Length < 8)
         {
-            createErrorMessage = "Password must be at least 6 characters long.";
+            createErrorMessage = "Password must be at least 8 characters long.";
             return;
         }
 
@@ -975,9 +975,9 @@
 
         if (!string.IsNullOrWhiteSpace(editStaffModel.Password))
         {
-            if (editStaffModel.Password.Length < 6)
+            if (editStaffModel.Password.Length < 8)
             {
-                editErrorMessage = "Password must be at least 6 characters long.";
+                editErrorMessage = "Password must be at least 8 characters long.";
                 return;
             }
 
