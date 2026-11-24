@@ -770,7 +770,7 @@ public class AuthService : IAuthService
             return ApiResponseDto<bool>.Ok(true, genericOk);
         }
 
-        var otpCode = await _otpService.GenerateOtpAsync(normalizedEmail, OtpConstants.PurposeResetPassword);
+        var otpCode = await _otpService.GenerateOtpAsync(normalizedEmail, OtpConstants.PurposeResetPassword, 5);
 
         var subject = "[FitConnect] Password reset verification code";
         var body = $@"

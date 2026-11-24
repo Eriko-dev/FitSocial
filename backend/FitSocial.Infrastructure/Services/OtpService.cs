@@ -19,7 +19,7 @@ public class OtpService : IOtpService
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<string> GenerateOtpAsync(string email, string purpose)
+    public async Task<string> GenerateOtpAsync(string email, string purpose, int expiryMinutes = 15)
     {
         var normalizedEmail = email.Trim().ToLower();
 
@@ -39,7 +39,7 @@ public class OtpService : IOtpService
             Email = normalizedEmail,
             OtpHash = otpHash,
             Purpose = purpose,
-            ExpiresAt = DateTime.UtcNow.AddMinutes(OtpConstants.ExpiryMinutes),
+            ExpiresAt = DateTime.UtcNow.AddMinutes(expiryMinutes > 0 ? expiryMinutes : OtpConstants.ExpiryMinutes),
             AttemptCount = 0,
             CreatedAt = DateTime.UtcNow
         };
