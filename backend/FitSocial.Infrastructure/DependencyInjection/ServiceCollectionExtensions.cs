@@ -74,6 +74,7 @@ public static class ServiceCollectionExtensions
         });
 
         services.AddSingleton<IEncryptionService, AesEncryptionService>();
+        services.AddScoped<ICurrentUserContext, CurrentUserContext>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddScoped<IEmailService, EmailService>();

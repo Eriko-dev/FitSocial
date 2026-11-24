@@ -32,4 +32,9 @@ public interface IReportRepository : IRepository<Report>
     /// Checks if a reporter already has a pending report against a specific user.
     /// </summary>
     Task<bool> HasPendingReportAsync(Guid reporterId, Guid reportedUserId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves all reports filed against a user or user's posts for appeal processing.
+    /// </summary>
+    Task<List<Report>> GetReportsForUserAppealAsync(Guid userId, CancellationToken cancellationToken = default);
 }

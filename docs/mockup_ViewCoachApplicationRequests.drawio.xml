@@ -1,0 +1,393 @@
+<mxfile host="app.diagrams.net" modified="2026-11-18T15:32:00.000Z" agent="Antigravity" version="24.0.0" type="device">
+  <diagram id="view-coach-applications-mockup" name="View Coach Application Requests">
+    <mxGraphModel dx="1450" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1440" pageHeight="920" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ==================== OUTER CANVAS BACKGROUND ==================== -->
+        <mxCell id="canvas_bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E5E7EB;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="10" y="10" width="1420" height="890" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== LEFT SIDEBAR (Admin/Staff Console) ==================== -->
+        <mxCell id="sidebar_container" value="" style="rounded=1;arcSize=4;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D1D5DB;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="25" y="25" width="235" height="860" as="geometry" />
+        </mxCell>
+
+        <!-- Brand Logo Box in Sidebar -->
+        <mxCell id="side_brand_logo" value="FitConnect&lt;br&gt;Logo" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=#E5E7EB;strokeColor=#9CA3AF;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#111827;align=center;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="65" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="side_brand_text" value="&lt;b style=&quot;font-size:14px;color:#111827;&quot;&gt;FitConnect&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px;color:#6B7280;&quot;&gt;Admin / Staff Console&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="115" y="40" width="135" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="side_divider_top" value="" style="line;strokeWidth=1;html=1;strokeColor=#E5E7EB;" vertex="1" parent="1">
+          <mxGeometry x="35" y="94" width="215" height="10" as="geometry" />
+        </mxCell>
+
+        <!-- Sidebar Navigation Items -->
+        <mxCell id="nav_dashboard" value="[Icon] Dashboard" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="110" width="209" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_users" value="[Icon] User Accounts" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="150" width="209" height="36" as="geometry" />
+        </mxCell>
+        <!-- ACTIVE MENU ITEM: Coach Applications -->
+        <mxCell id="nav_coach_apps" value="[Icon] Coach Applications" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=#E5E7EB;strokeColor=#9CA3AF;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="38" y="190" width="209" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_coach_certs" value="[Icon] Coach Certificates" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="232" width="209" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_sub_plans" value="[Icon] Coach Registration Plans" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="272" width="209" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_locations" value="[Icon] Locations &amp; Facilities" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="312" width="209" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_reports" value="[Icon] Reports" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="352" width="209" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_appeals" value="[Icon] Appeals" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="392" width="209" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_payouts" value="[Icon] Coach Payouts" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="432" width="209" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_refunds" value="[Icon] Refund Requests" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="472" width="209" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_money" value="[Icon] Money Movements" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="512" width="209" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_gateways" value="[Icon] Payment Gateways" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="552" width="209" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_staff" value="[Icon] Staff Accounts" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="592" width="209" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_logs" value="[Icon] System Logs" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="632" width="209" height="36" as="geometry" />
+        </mxCell>
+
+        <!-- Sidebar Footer User Info & Sign Out -->
+        <mxCell id="side_divider_bot" value="" style="line;strokeWidth=1;html=1;strokeColor=#E5E7EB;" vertex="1" parent="1">
+          <mxGeometry x="35" y="755" width="215" height="10" as="geometry" />
+        </mxCell>
+        <mxCell id="side_user_card" value="" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#F9FAFB;strokeColor=#D1D5DB;" vertex="1" parent="1">
+          <mxGeometry x="38" y="772" width="209" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="side_user_name" value="&lt;b&gt;Portal Reviewer&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px;color:#6B7280;&quot;&gt;staff@fitconnect.com&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=11;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="48" y="776" width="135" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="side_role_badge" value="STAFF" style="rounded=1;arcSize=30;whiteSpace=wrap;html=1;fillColor=#E5E7EB;strokeColor=#9CA3AF;fontFamily=Helvetica;fontSize=9;fontStyle=1;fontColor=#1F2937;" vertex="1" parent="1">
+          <mxGeometry x="188" y="782" width="50" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="side_logout_btn" value="Sign out" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D1D5DB;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="834" width="209" height="34" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== MAIN WORKSPACE CONTAINER ==================== -->
+        <mxCell id="main_workspace" value="" style="rounded=1;arcSize=3;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1F2937;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="275" y="25" width="1140" height="860" as="geometry" />
+        </mxCell>
+
+        <!-- 1. Page Header & Pending Review Badge -->
+        <mxCell id="page_title" value="Coach Application Requests" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=22;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="305" y="45" width="320" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="pending_badge_pill" value="● 5 Pending Review" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#9CA3AF;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#1F2937;align=center;" vertex="1" parent="1">
+          <mxGeometry x="625" y="48" width="135" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="page_subtitle" value="Review and verify coach application submissions across the FitConnect platform." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=12;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="305" y="78" width="560" height="22" as="geometry" />
+        </mxCell>
+
+        <!-- 2. Status Filter Tabs Bar -->
+        <mxCell id="tabs_bottom_line" value="" style="line;strokeWidth=1;html=1;strokeColor=#E5E7EB;" vertex="1" parent="1">
+          <mxGeometry x="305" y="148" width="1080" height="10" as="geometry" />
+        </mxCell>
+
+        <!-- Tab 1: All Applications -->
+        <mxCell id="tab_all_label" value="All Applications" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="305" y="116" width="100" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="tab_all_count" value="36" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#D1D5DB;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="408" y="120" width="28" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Tab 2: Pending Review (ACTIVE TAB) -->
+        <mxCell id="tab_pending_label" value="Pending Review" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="460" y="116" width="100" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="tab_pending_count" value="5" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#1F2937;strokeColor=#1F2937;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="562" y="120" width="24" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="tab_pending_underline" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#111827;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="460" y="149" width="126" height="3" as="geometry" />
+        </mxCell>
+
+        <!-- Tab 3: Approved -->
+        <mxCell id="tab_approved_label" value="Approved" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="612" y="116" width="65" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="tab_approved_count" value="19" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#D1D5DB;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="680" y="120" width="28" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Tab 4: Rejected -->
+        <mxCell id="tab_rejected_label" value="Rejected" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="734" y="116" width="58" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="tab_rejected_count" value="12" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#D1D5DB;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="795" y="120" width="28" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- 3. Toolbar: Search, Experience Filter, Sort Dropdown, Refresh Button -->
+        <mxCell id="search_input_box" value="Search by applicant name, email, application ID (e.g. #APP-...)" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=#F9FAFB;strokeColor=#D1D5DB;align=left;spacingLeft=14;fontFamily=Helvetica;fontSize=12;fontColor=#9CA3AF;" vertex="1" parent="1">
+          <mxGeometry x="305" y="170" width="615" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="exp_filter_dropdown" value="Experience: All Levels   ▼" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D1D5DB;align=center;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="932" y="170" width="175" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="sort_dropdown" value="Sort: Submission (Newest first)   ▼" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D1D5DB;align=center;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="1119" y="170" width="215" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="refresh_btn" value="↻" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D1D5DB;align=center;fontFamily=Helvetica;fontSize=16;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="1346" y="170" width="39" height="38" as="geometry" />
+        </mxCell>
+
+        <!-- 4. Applications Data Table -->
+        <mxCell id="table_outer_box" value="" style="rounded=1;arcSize=2;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E5E7EB;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="305" y="224" width="1080" height="576" as="geometry" />
+        </mxCell>
+
+        <!-- Table Header Row -->
+        <mxCell id="table_header_bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F9FAFB;strokeColor=#E5E7EB;" vertex="1" parent="1">
+          <mxGeometry x="305" y="224" width="1080" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="th_chk" value="" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D1D5DB;" vertex="1" parent="1">
+          <mxGeometry x="322" y="238" width="14" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="th_profile" value="APPLICANT PROFILE" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#4B5563;" vertex="1" parent="1">
+          <mxGeometry x="355" y="224" width="200" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="th_coach_info" value="COACH INFO" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#4B5563;" vertex="1" parent="1">
+          <mxGeometry x="650" y="224" width="180" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="th_submitted" value="SUBMITTED &amp; SLA" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#4B5563;" vertex="1" parent="1">
+          <mxGeometry x="915" y="224" width="130" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="th_status" value="STATUS" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#4B5563;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="224" width="100" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="th_actions" value="ACTIONS" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#4B5563;" vertex="1" parent="1">
+          <mxGeometry x="1260" y="224" width="105" height="42" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== ROW 1 (Pending, Certificate Not Yet Approved) ==================== -->
+        <mxCell id="row1_bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E5E7EB;" vertex="1" parent="1">
+          <mxGeometry x="305" y="266" width="1080" height="106" as="geometry" />
+        </mxCell>
+        <mxCell id="r1_chk" value="" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9CA3AF;" vertex="1" parent="1">
+          <mxGeometry x="322" y="312" width="14" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="r1_avatar" value="NA" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#D1D5DB;strokeColor=#6B7280;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="355" y="297" width="42" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="r1_profile_text" value="&lt;b style=&quot;color:#111827;font-size:13px;&quot;&gt;Nguyen Van AAA&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;color:#6B7280;font-size:11px;&quot;&gt;riwon60156@digeros.com&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;color:#9CA3AF;font-size:11px;&quot;&gt;011234567809&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="408" y="284" width="225" height="68" as="geometry" />
+        </mxCell>
+        <mxCell id="r1_exp_pill" value="2 yrs experience" style="rounded=1;arcSize=30;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#D1D5DB;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="650" y="278" width="102" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="r1_cert_pill" value="1 certs" style="rounded=1;arcSize=30;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#9CA3AF;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#1F2937;" vertex="1" parent="1">
+          <mxGeometry x="650" y="305" width="54" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="r1_bio" value="Professional gym &amp; hypertrophy certificate" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=11;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="650" y="329" width="245" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="r1_date" value="&lt;b style=&quot;color:#111827;font-size:12px;&quot;&gt;6 Days Ago&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;color:#9CA3AF;font-size:11px;&quot;&gt;6d ago&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="915" y="299" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r1_status" value="Pending Review" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#9CA3AF;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="306" width="106" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="r1_btn_review" value="Review" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#1F2937;strokeColor=#111827;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="1238" y="302" width="64" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="r1_btn_reject" value="Reject" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9CA3AF;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="1308" y="302" width="60" height="34" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== ROW 2 (Pending, style matching row 1) ==================== -->
+        <mxCell id="row2_bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E5E7EB;" vertex="1" parent="1">
+          <mxGeometry x="305" y="372" width="1080" height="106" as="geometry" />
+        </mxCell>
+        <mxCell id="r2_chk" value="" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9CA3AF;" vertex="1" parent="1">
+          <mxGeometry x="322" y="418" width="14" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="r2_avatar" value="IC" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#D1D5DB;strokeColor=#6B7280;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="355" y="403" width="42" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="r2_profile_text" value="&lt;b style=&quot;color:#111827;font-size:13px;&quot;&gt;Integration Coach&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;color:#6B7280;font-size:11px;&quot;&gt;intcoach_f5362f49@example.com&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;color:#9CA3AF;font-size:11px;&quot;&gt;0905112233&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="408" y="390" width="225" height="68" as="geometry" />
+        </mxCell>
+        <mxCell id="r2_exp_pill" value="0 yrs experience" style="rounded=1;arcSize=30;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#D1D5DB;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="650" y="388" width="102" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="r2_cert_pill" value="1 certs" style="rounded=1;arcSize=30;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#9CA3AF;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#1F2937;" vertex="1" parent="1">
+          <mxGeometry x="650" y="415" width="54" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="r2_bio" value="Certified personal fitness trainer" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=11;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="650" y="437" width="245" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="r2_date" value="&lt;b style=&quot;color:#111827;font-size:12px;&quot;&gt;6 Days Ago&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;color:#9CA3AF;font-size:11px;&quot;&gt;6d ago&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="915" y="405" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r2_status" value="Pending Review" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#9CA3AF;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="412" width="106" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="r2_btn_review" value="Review" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#1F2937;strokeColor=#111827;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="1238" y="408" width="64" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="r2_btn_reject" value="Reject" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9CA3AF;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="1308" y="408" width="60" height="34" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== ROW 3 (Pending, CanApprove = false) ==================== -->
+        <mxCell id="row3_bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E5E7EB;" vertex="1" parent="1">
+          <mxGeometry x="305" y="478" width="1080" height="106" as="geometry" />
+        </mxCell>
+        <mxCell id="r3_chk" value="" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9CA3AF;" vertex="1" parent="1">
+          <mxGeometry x="322" y="524" width="14" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="r3_avatar" value="NS" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#D1D5DB;strokeColor=#6B7280;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="355" y="509" width="42" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="r3_profile_text" value="&lt;b style=&quot;color:#111827;font-size:13px;&quot;&gt;Nguyen Hoang SANG&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;color:#6B7280;font-size:11px;&quot;&gt;jibin77712@digeros.com&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;color:#9CA3AF;font-size:11px;&quot;&gt;0123123123&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="408" y="496" width="225" height="68" as="geometry" />
+        </mxCell>
+        <mxCell id="r3_exp_pill" value="2 yrs experience" style="rounded=1;arcSize=30;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#D1D5DB;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="650" y="490" width="102" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="r3_cert_pill" value="1 certs" style="rounded=1;arcSize=30;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#9CA3AF;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#1F2937;" vertex="1" parent="1">
+          <mxGeometry x="650" y="517" width="54" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="r3_bio" value="Experienced strength &amp; conditioning coach" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=11;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="650" y="541" width="245" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="r3_date" value="&lt;b style=&quot;color:#111827;font-size:12px;&quot;&gt;6 Days Ago&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;color:#9CA3AF;font-size:11px;&quot;&gt;6d ago&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="915" y="511" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r3_status" value="Pending Review" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#9CA3AF;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="518" width="106" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="r3_btn_review" value="Review" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#1F2937;strokeColor=#111827;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="1238" y="514" width="64" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="r3_btn_reject" value="Reject" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9CA3AF;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="1308" y="514" width="60" height="34" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== ROW 4 (Pending, CanApprove = TRUE -> Shows Review + Approve + Reject) ==================== -->
+        <mxCell id="row4_bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E5E7EB;" vertex="1" parent="1">
+          <mxGeometry x="305" y="584" width="1080" height="108" as="geometry" />
+        </mxCell>
+        <mxCell id="r4_chk" value="" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9CA3AF;" vertex="1" parent="1">
+          <mxGeometry x="322" y="631" width="14" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="r4_avatar" value="LT" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#D1D5DB;strokeColor=#6B7280;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="355" y="616" width="42" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="r4_profile_text" value="&lt;b style=&quot;color:#111827;font-size:13px;&quot;&gt;Le Thi Thu Thao&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;color:#6B7280;font-size:11px;&quot;&gt;coach.pending.hasreject@fitsocial.test&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;color:#9CA3AF;font-size:11px;&quot;&gt;0911000002&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="408" y="603" width="225" height="68" as="geometry" />
+        </mxCell>
+        <mxCell id="r4_exp_pill" value="4 yrs experience" style="rounded=1;arcSize=30;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#D1D5DB;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="650" y="596" width="102" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="r4_cert_pill" value="2 certs" style="rounded=1;arcSize=30;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#9CA3AF;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#1F2937;" vertex="1" parent="1">
+          <mxGeometry x="650" y="623" width="54" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="r4_bio" value="Yoga Vinyasa &amp; Pilates rehabilitation coach..." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=11;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="650" y="647" width="245" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="r4_date" value="&lt;b style=&quot;color:#111827;font-size:12px;&quot;&gt;Oct 05, 2026&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;color:#9CA3AF;font-size:11px;&quot;&gt;39d ago&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="915" y="618" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r4_status" value="Pending Review" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#9CA3AF;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="625" width="106" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="r4_btn_review" value="Review" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#1F2937;strokeColor=#111827;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="1166" y="621" width="62" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="r4_btn_approve" value="Approve" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#E5E7EB;strokeColor=#4B5563;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="1234" y="621" width="68" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="r4_btn_reject" value="Reject" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9CA3AF;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="1308" y="621" width="60" height="34" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== ROW 5 (Pending, CanApprove = TRUE) ==================== -->
+        <mxCell id="row5_bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E5E7EB;" vertex="1" parent="1">
+          <mxGeometry x="305" y="692" width="1080" height="108" as="geometry" />
+        </mxCell>
+        <mxCell id="r5_chk" value="" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9CA3AF;" vertex="1" parent="1">
+          <mxGeometry x="322" y="739" width="14" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="r5_avatar" value="NH" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#D1D5DB;strokeColor=#6B7280;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="355" y="724" width="42" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="r5_profile_text" value="&lt;b style=&quot;color:#111827;font-size:13px;&quot;&gt;Nguyen Hoang Coach&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;color:#6B7280;font-size:11px;&quot;&gt;coach.pending@fitsocial.test&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;color:#9CA3AF;font-size:11px;&quot;&gt;0911000001&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="408" y="711" width="225" height="68" as="geometry" />
+        </mxCell>
+        <mxCell id="r5_exp_pill" value="4 yrs experience" style="rounded=1;arcSize=30;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#D1D5DB;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="650" y="704" width="102" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="r5_cert_pill" value="2 certs" style="rounded=1;arcSize=30;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#9CA3AF;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#1F2937;" vertex="1" parent="1">
+          <mxGeometry x="650" y="731" width="54" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="r5_bio" value="NASM &amp; ACE Certified Strength Coach..." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=11;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="650" y="755" width="245" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="r5_date" value="&lt;b style=&quot;color:#111827;font-size:12px;&quot;&gt;Oct 05, 2026&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;color:#9CA3AF;font-size:11px;&quot;&gt;39d ago&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="915" y="726" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r5_status" value="Pending Review" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#9CA3AF;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="1060" y="733" width="106" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="r5_btn_review" value="Review" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#1F2937;strokeColor=#111827;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="1166" y="729" width="62" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="r5_btn_approve" value="Approve" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#E5E7EB;strokeColor=#4B5563;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="1234" y="729" width="68" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="r5_btn_reject" value="Reject" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9CA3AF;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="1308" y="729" width="60" height="34" as="geometry" />
+        </mxCell>
+
+        <!-- 5. Pagination Footer Bar -->
+        <mxCell id="page_info_text" value="Showing &lt;b&gt;1–5&lt;/b&gt; of &lt;b&gt;5&lt;/b&gt; applications" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=12;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="305" y="822" width="220" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="btn_prev_page" value="‹ Previous" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#F9FAFB;strokeColor=#E5E7EB;fontFamily=Helvetica;fontSize=11;fontColor=#9CA3AF;" vertex="1" parent="1">
+          <mxGeometry x="750" y="822" width="76" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="btn_page_1" value="1" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#1F2937;strokeColor=#111827;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="832" y="822" width="32" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="btn_next_page" value="Next ›" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#F9FAFB;strokeColor=#E5E7EB;fontFamily=Helvetica;fontSize=11;fontColor=#9CA3AF;" vertex="1" parent="1">
+          <mxGeometry x="870" y="822" width="64" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="per_page_label" value="Per page:" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontFamily=Helvetica;fontSize=12;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="1220" y="822" width="65" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="per_page_select" value="10 / page   ▼" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D1D5DB;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="1292" y="822" width="93" height="32" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

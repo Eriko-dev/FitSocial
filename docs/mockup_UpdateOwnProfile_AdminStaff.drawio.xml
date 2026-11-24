@@ -1,0 +1,232 @@
+﻿<mxfile host="app.diagrams.net" modified="2026-11-19T01:30:00.000Z" agent="Antigravity" version="24.0.0" type="device">
+  <diagram id="update-own-profile-admin-staff" name="Update Own Profile (Admin/Staff)">
+    <mxGraphModel dx="1450" dy="920" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1440" pageHeight="920" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Canvas Background -->
+        <mxCell id="canvas_bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E5E7EB;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="10" y="10" width="1420" height="900" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== LEFT SIDEBAR (Admin Console) ==================== -->
+        <mxCell id="sidebar_container" value="" style="rounded=1;arcSize=4;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D1D5DB;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="25" y="25" width="235" height="870" as="geometry" />
+        </mxCell>
+        <mxCell id="side_brand_logo" value="FitConnect&#xa;Logo" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=#E5E7EB;strokeColor=#9CA3AF;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#111827;align=center;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="65" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="side_brand_text" value="&lt;b style=&quot;font-size:14px;color:#111827;&quot;&gt;FitConnect&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px;color:#6B7280;&quot;&gt;Admin Console&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="115" y="40" width="135" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="side_divider_top" value="" style="line;strokeWidth=1;html=1;strokeColor=#E5E7EB;" vertex="1" parent="1">
+          <mxGeometry x="35" y="94" width="215" height="10" as="geometry" />
+        </mxCell>
+
+        <!-- Sidebar Navigation Items -->
+        <mxCell id="nav_dash" value="[Icon] Dashboard" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="110" width="209" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_users" value="[Icon] User Accounts" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="148" width="209" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_coach_apps" value="[Icon] Coach Applications" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="186" width="209" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_certs" value="[Icon] Coach Certificates" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="224" width="209" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_plans" value="[Icon] Registration Plans" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="262" width="209" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_locs" value="[Icon] Locations &amp; Facilities" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="300" width="209" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_reports" value="[Icon] Reports &amp; Violations" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="338" width="209" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_appeals" value="[Icon] Appeals Center" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="376" width="209" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_staff" value="[Icon] Staff Accounts" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="414" width="209" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_logs" value="[Icon] System Logs" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="452" width="209" height="34" as="geometry" />
+        </mxCell>
+
+        <!-- Sidebar Footer Admin Identity Card -->
+        <mxCell id="side_divider_bot" value="" style="line;strokeWidth=1;html=1;strokeColor=#E5E7EB;" vertex="1" parent="1">
+          <mxGeometry x="35" y="745" width="215" height="10" as="geometry" />
+        </mxCell>
+        <mxCell id="side_user_card" value="" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#D1D5DB;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="35" y="760" width="215" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="side_user_avatar" value="NA" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#111827;strokeColor=none;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="46" y="774" width="36" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="side_user_name" value="&lt;b style=&quot;font-size:12px;color:#111827;&quot;&gt;Nguyen Admin&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size:10px;color:#4B5563;&quot;&gt;ADMIN Role&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="90" y="768" width="105" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="side_edit_profile_pill" value="[Edit Profile]" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=#111827;strokeColor=none;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="90" y="805" width="75" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="side_signout_btn" value="Sign Out" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="35" y="850" width="215" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== TOP BREADCRUMB & HEADER ==================== -->
+        <mxCell id="top_header_panel" value="" style="rounded=1;arcSize=4;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D1D5DB;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="275" y="25" width="1140" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="breadcrumb_text" value="Admin Console  /  Account Settings  /  &lt;b style=&quot;color:#111827;&quot;&gt;Edit Profile&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=13;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="295" y="38" width="400" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="header_status_badge" value="System Online" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#10B981;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#065F46;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1190" y="38" width="95" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="header_date_text" value="19/11/2026" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="1295" y="38" width="100" height="28" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== CENTER WORKSPACE: UPDATE OWN PROFILE ==================== -->
+        <mxCell id="main_content_card" value="" style="rounded=1;arcSize=4;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D1D5DB;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="275" y="95" width="1140" height="800" as="geometry" />
+        </mxCell>
+
+        <!-- Header Titles -->
+        <mxCell id="page_title" value="Update Own Profile (Admin / Staff)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=20;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="305" y="115" width="500" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="page_subtitle" value="Manage your personal profile details, contact information, and management portal security credentials." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=12;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="305" y="145" width="700" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Success Toast Notification Banner -->
+        <mxCell id="toast_banner" value="Profile updated successfully! Your updated identity is now reflected in the sidebar and management audit logs." style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#9CA3AF;strokeWidth=1;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#111827;align=left;spacingLeft=16;" vertex="1" parent="1">
+          <mxGeometry x="305" y="175" width="1080" height="38" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== LEFT COLUMN: AVATAR & IDENTITY (Width 320) ==================== -->
+        <mxCell id="avatar_box" value="" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=#F9FAFB;strokeColor=#E5E7EB;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="305" y="230" width="320" height="480" as="geometry" />
+        </mxCell>
+        <mxCell id="avatar_header" value="Profile Photo &amp; Account Role" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=13;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="305" y="245" width="320" height="24" as="geometry" />
+        </mxCell>
+        <!-- Big Circular Avatar -->
+        <mxCell id="big_avatar" value="NA" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#1F2937;strokeColor=#9CA3AF;strokeWidth=2;fontFamily=Helvetica;fontSize=36;fontStyle=1;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="405" y="280" width="120" height="120" as="geometry" />
+        </mxCell>
+        <!-- Avatar Action Buttons -->
+        <mxCell id="btn_change_photo" value="Change Photo" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#111827;strokeColor=#111827;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="350" y="415" width="110" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="btn_remove_photo" value="Remove" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#D1D5DB;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#374151;align=center;" vertex="1" parent="1">
+          <mxGeometry x="470" y="415" width="85" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="avatar_hint" value="JPG, JPEG, PNG, or WEBP (Max 5 MB)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=10;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="305" y="455" width="320" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="divider_avatar_box" value="" style="line;strokeWidth=1;html=1;strokeColor=#E5E7EB;" vertex="1" parent="1">
+          <mxGeometry x="325" y="485" width="280" height="10" as="geometry" />
+        </mxCell>
+
+        <!-- Identity Summary Fields -->
+        <mxCell id="info_role_label" value="Role Access:" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="330" y="505" width="100" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="info_role_badge" value="ADMIN" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=#E5E7EB;strokeColor=#9CA3AF;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#111827;align=center;" vertex="1" parent="1">
+          <mxGeometry x="440" y="505" width="75" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="info_status_label" value="Account Status:" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="330" y="540" width="100" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="info_status_badge" value="ACTIVE" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#10B981;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#065F46;align=center;" vertex="1" parent="1">
+          <mxGeometry x="440" y="540" width="75" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="info_email_label" value="Login Email (Read-only):" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="330" y="575" width="270" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="info_email_val" value="admin@fitsocial.com" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#E5E7EB;strokeColor=#D1D5DB;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#4B5563;align=left;spacingLeft=12;" vertex="1" parent="1">
+          <mxGeometry x="330" y="600" width="270" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="info_email_sub" value="Email address is tied to auth identity and cannot be modified." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=9;fontColor=#9CA3AF;" vertex="1" parent="1">
+          <mxGeometry x="330" y="638" width="270" height="18" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== RIGHT COLUMN: FORM INPUTS (Width 730) ==================== -->
+        <mxCell id="form_container" value="" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E5E7EB;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="655" y="230" width="730" height="480" as="geometry" />
+        </mxCell>
+        <mxCell id="form_header" value="Personal Profile Details" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=14;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="680" y="245" width="300" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- Full Name Field -->
+        <mxCell id="lbl_fullname" value="Full Name *" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="680" y="285" width="150" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="input_fullname" value="Nguyen Van Admin" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9CA3AF;strokeWidth=1;fontFamily=Helvetica;fontSize=12;fontColor=#111827;align=left;spacingLeft=12;" vertex="1" parent="1">
+          <mxGeometry x="680" y="310" width="680" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="hint_fullname" value="Enter 2 to 100 characters. Letters, spaces, and hyphens only (no numbers)." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=10;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="680" y="352" width="680" height="18" as="geometry" />
+        </mxCell>
+
+        <!-- Phone Number Field -->
+        <mxCell id="lbl_phone" value="Phone Number *" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="680" y="380" width="150" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="input_phone" value="0987654321" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9CA3AF;strokeWidth=1;fontFamily=Helvetica;fontSize=12;fontColor=#111827;align=left;spacingLeft=12;" vertex="1" parent="1">
+          <mxGeometry x="680" y="405" width="680" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="hint_phone" value="Must be a valid 10-digit number starting with 0. Cannot duplicate another user account." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=10;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="680" y="447" width="680" height="18" as="geometry" />
+        </mxCell>
+
+        <!-- Date of Birth & Gender (2 Columns) -->
+        <mxCell id="lbl_dob" value="Date of Birth" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="680" y="475" width="150" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="input_dob" value="15/08/1990  [Calendar Icon]" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9CA3AF;strokeWidth=1;fontFamily=Helvetica;fontSize=12;fontColor=#111827;align=left;spacingLeft=12;" vertex="1" parent="1">
+          <mxGeometry x="680" y="500" width="325" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="hint_dob" value="Year must be 1900 or later; cannot be in the future." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=10;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="680" y="542" width="325" height="18" as="geometry" />
+        </mxCell>
+
+        <mxCell id="lbl_gender" value="Gender" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="1035" y="475" width="150" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="gender_opt_male" value="(•) Male" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#E5E7EB;strokeColor=#9CA3AF;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#111827;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1035" y="500" width="95" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="gender_opt_female" value="( ) Female" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D1D5DB;fontFamily=Helvetica;fontSize=11;fontColor=#4B5563;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1140" y="500" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="gender_opt_other" value="( ) Other" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D1D5DB;fontFamily=Helvetica;fontSize=11;fontColor=#4B5563;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1250" y="500" width="95" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Divider and Actions -->
+        <mxCell id="divider_actions" value="" style="line;strokeWidth=1;html=1;strokeColor=#E5E7EB;" vertex="1" parent="1">
+          <mxGeometry x="680" y="620" width="680" height="10" as="geometry" />
+        </mxCell>
+        <mxCell id="btn_cancel" value="Cancel" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D1D5DB;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#374151;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1150" y="650" width="95" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="btn_save" value="Save Changes" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#111827;strokeColor=#111827;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1255" y="650" width="125" height="42" as="geometry" />
+        </mxCell>
+
+        <!-- Figure Caption -->
+        <mxCell id="caption_fig" value="Figure 24: Update Own Profile Workspace (Admin / Staff)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontStyle=2;fontColor=#4B5563;" vertex="1" parent="1">
+          <mxGeometry x="275" y="855" width="1140" height="25" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,315 @@
+<mxfile host="app.diagrams.net" modified="2026-11-18T22:03:00.000Z" agent="Antigravity" version="24.0.0" type="device">
+  <diagram id="view-system-logs" name="View System Logs">
+    <mxGraphModel dx="1450" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1440" pageHeight="920" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ==================== OUTER CANVAS BACKGROUND ==================== -->
+        <mxCell id="canvas_bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E5E7EB;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="10" y="10" width="1420" height="890" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== LEFT SIDEBAR (Admin Console) ==================== -->
+        <mxCell id="sidebar_container" value="" style="rounded=1;arcSize=4;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D1D5DB;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="25" y="25" width="235" height="860" as="geometry" />
+        </mxCell>
+        <mxCell id="side_brand_logo" value="FitConnect&lt;br&gt;Logo" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=#E5E7EB;strokeColor=#9CA3AF;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#111827;align=center;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="65" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="side_brand_text" value="&lt;b style=&quot;font-size:14px;color:#111827;&quot;&gt;FitConnect&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px;color:#6B7280;&quot;&gt;Admin Console&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="115" y="40" width="135" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="side_divider_top" value="" style="line;strokeWidth=1;html=1;strokeColor=#E5E7EB;" vertex="1" parent="1">
+          <mxGeometry x="35" y="94" width="215" height="10" as="geometry" />
+        </mxCell>
+
+        <!-- Sidebar Navigation Items -->
+        <mxCell id="nav_dashboard" value="[Icon] Dashboard" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="110" width="209" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_users" value="[Icon] User Accounts" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="150" width="209" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_coach_apps" value="[Icon] Coach Applications" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="190" width="209" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_coach_certs" value="[Icon] Coach Certificates" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="230" width="209" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_sub_plans" value="[Icon] Coach Registration Plans" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="270" width="209" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_locations" value="[Icon] Locations &amp; Facilities" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="310" width="209" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_reports" value="[Icon] Reports" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="350" width="209" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_appeals" value="[Icon] Appeals" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="390" width="209" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_payouts" value="[Icon] Coach Payouts" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="430" width="209" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_refunds" value="[Icon] Refund Requests" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="470" width="209" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_money" value="[Icon] Money Movements" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="510" width="209" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_gateways" value="[Icon] Payment Gateways" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="550" width="209" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_staff" value="[Icon] Staff Accounts" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="590" width="209" height="36" as="geometry" />
+        </mxCell>
+        <!-- ACTIVE MENU ITEM: System Logs (ADMIN ONLY) -->
+        <mxCell id="nav_logs" value="[Icon] System Logs" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=#E5E7EB;strokeColor=#9CA3AF;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="38" y="630" width="209" height="38" as="geometry" />
+        </mxCell>
+
+        <!-- Sidebar Footer User Info & Sign Out -->
+        <mxCell id="side_divider_bot" value="" style="line;strokeWidth=1;html=1;strokeColor=#E5E7EB;" vertex="1" parent="1">
+          <mxGeometry x="35" y="755" width="215" height="10" as="geometry" />
+        </mxCell>
+        <mxCell id="side_user_card" value="" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#F9FAFB;strokeColor=#D1D5DB;" vertex="1" parent="1">
+          <mxGeometry x="38" y="772" width="209" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="side_user_name" value="&lt;b&gt;System Admin&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px;color:#6B7280;&quot;&gt;admin@fitconnect.com&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=11;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="48" y="776" width="135" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="side_role_badge" value="ADMIN" style="rounded=1;arcSize=30;whiteSpace=wrap;html=1;fillColor=#111827;strokeColor=#111827;fontFamily=Helvetica;fontSize=9;fontStyle=1;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="188" y="782" width="50" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="side_logout_btn" value="Sign out" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D1D5DB;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="38" y="834" width="209" height="34" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== MAIN WORKSPACE CONTAINER ==================== -->
+        <mxCell id="main_workspace" value="" style="rounded=1;arcSize=3;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1F2937;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="275" y="25" width="1140" height="860" as="geometry" />
+        </mxCell>
+
+        <!-- 1. Breadcrumb & Header -->
+        <mxCell id="breadcrumb" value="Admin Console   /   &lt;b&gt;System Logs&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="305" y="38" width="260" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="page_title" value="System Logs" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=22;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="305" y="56" width="260" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="page_subtitle" value="Monitor and review administrative activities across FitConnect." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;fontSize=12;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="305" y="84" width="480" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="btn_refresh" value="↻ Refresh" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D1D5DB;align=center;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="1285" y="52" width="100" height="36" as="geometry" />
+        </mxCell>
+
+        <!-- 2. Filter Panel -->
+        <mxCell id="filter_panel" value="" style="rounded=1;arcSize=4;whiteSpace=wrap;html=1;fillColor=#F9FAFB;strokeColor=#E5E7EB;" vertex="1" parent="1">
+          <mxGeometry x="305" y="114" width="1080" height="118" as="geometry" />
+        </mxCell>
+        <mxCell id="pill_all" value="All Roles" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#111827;strokeColor=#111827;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="320" y="126" width="84" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="pill_admin" value="● Admin" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D1D5DB;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="412" y="126" width="84" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="pill_staff" value="● Staff" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D1D5DB;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="504" y="126" width="80" height="28" as="geometry" />
+        </mxCell>
+
+        <!-- Filter Controls Row -->
+        <mxCell id="search_input" value="[Search] Search by actor name, email, action, entity..." style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D1D5DB;align=left;spacingLeft=10;fontFamily=Helvetica;fontSize=11;fontColor=#9CA3AF;" vertex="1" parent="1">
+          <mxGeometry x="320" y="176" width="305" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="flt_role_lbl" value="Actor Role" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#4B5563;" vertex="1" parent="1">
+          <mxGeometry x="635" y="158" width="90" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="flt_role" value="All (Admin &amp; Staff) ▼" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D1D5DB;fontFamily=Helvetica;fontSize=11;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="635" y="176" width="130" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="flt_action_lbl" value="Action Type" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#4B5563;" vertex="1" parent="1">
+          <mxGeometry x="775" y="158" width="90" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="flt_action" value="All Actions ▼" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D1D5DB;fontFamily=Helvetica;fontSize=11;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="775" y="176" width="110" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="flt_res_lbl" value="Result" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#4B5563;" vertex="1" parent="1">
+          <mxGeometry x="895" y="158" width="70" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="flt_res" value="All Results ▼" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D1D5DB;fontFamily=Helvetica;fontSize=11;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="895" y="176" width="100" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="flt_date_lbl" value="Date Range" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#4B5563;" vertex="1" parent="1">
+          <mxGeometry x="1005" y="158" width="120" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="flt_date" value="yyyy-mm-dd  to  yyyy-mm-dd" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D1D5DB;fontFamily=Helvetica;fontSize=10;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="1005" y="176" width="185" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="btn_apply" value="Apply" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=#111827;strokeColor=#111827;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="176" width="68" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="btn_reset" value="Reset Filters" style="rounded=1;arcSize=15;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D1D5DB;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="1275" y="176" width="95" height="36" as="geometry" />
+        </mxCell>
+
+        <!-- 3. System Logs Table -->
+        <mxCell id="table_box" value="" style="rounded=1;arcSize=2;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E5E7EB;" vertex="1" parent="1">
+          <mxGeometry x="305" y="244" width="1080" height="295" as="geometry" />
+        </mxCell>
+        <mxCell id="th_bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F9FAFB;strokeColor=#E5E7EB;" vertex="1" parent="1">
+          <mxGeometry x="305" y="244" width="1080" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="th_actor" value="Actor" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#4B5563;" vertex="1" parent="1">
+          <mxGeometry x="320" y="244" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="th_role" value="Role" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#4B5563;" vertex="1" parent="1">
+          <mxGeometry x="520" y="244" width="70" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="th_action" value="Action" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#4B5563;" vertex="1" parent="1">
+          <mxGeometry x="605" y="244" width="280" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="th_target" value="Target" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#4B5563;" vertex="1" parent="1">
+          <mxGeometry x="900" y="244" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="th_ts" value="Timestamp ↓" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="1055" y="244" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="th_status" value="Status" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#4B5563;" vertex="1" parent="1">
+          <mxGeometry x="1170" y="244" width="80" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="th_details" value="Details" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#4B5563;" vertex="1" parent="1">
+          <mxGeometry x="1270" y="244" width="100" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Row 1: APPROVE_COACH_APPLICATION -->
+        <mxCell id="r1_bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E5E7EB;" vertex="1" parent="1">
+          <mxGeometry x="305" y="284" width="1080" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="r1_av" value="PR" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#E5E7EB;strokeColor=#6B7280;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="320" y="307" width="36" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="r1_actor" value="&lt;b style=&quot;font-size:12px;color:#111827;&quot;&gt;Portal Reviewer&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px;color:#6B7280;&quot;&gt;staff@fitconnect.com&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="364" y="300" width="145" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="r1_role" value="STAFF" style="rounded=1;arcSize=30;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#9CA3AF;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="520" y="313" width="60" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="r1_action" value="&lt;b style=&quot;font-size:11px;color:#111827;&quot;&gt;[APPROVE] Approve Coach Application&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px;color:#6B7280;&quot;&gt;Coach application for Tran Minh Coach approved.&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="605" y="298" width="280" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="r1_target" value="&lt;b style=&quot;font-size:10px;color:#374151;&quot;&gt;[CoachProfile]&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px;color:#111827;&quot;&gt;Tran Minh Coach&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="900" y="300" width="140" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="r1_ts" value="&lt;b style=&quot;font-size:11px;color:#111827;&quot;&gt;2026-11-18&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px;color:#6B7280;&quot;&gt;14:25:10&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="1055" y="302" width="100" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="r1_st" value="● Success" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#E5E7EB;strokeColor=#6B7280;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="1170" y="313" width="78" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="r1_btn" value="View Details" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#111827;strokeColor=#111827;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="1275" y="309" width="90" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- Row 2: UPDATE_STAFF -->
+        <mxCell id="r2_bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E5E7EB;" vertex="1" parent="1">
+          <mxGeometry x="305" y="366" width="1080" height="82" as="geometry" />
+        </mxCell>
+        <mxCell id="r2_av" value="SA" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#D1D5DB;strokeColor=#111827;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="320" y="389" width="36" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="r2_actor" value="&lt;b style=&quot;font-size:12px;color:#111827;&quot;&gt;System Admin&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px;color:#6B7280;&quot;&gt;admin@fitconnect.com&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="364" y="382" width="145" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="r2_role" value="ADMIN" style="rounded=1;arcSize=30;whiteSpace=wrap;html=1;fillColor=#111827;strokeColor=#111827;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="520" y="395" width="60" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="r2_action" value="&lt;b style=&quot;font-size:11px;color:#111827;&quot;&gt;[UPDATE] Edit Staff Account&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px;color:#6B7280;&quot;&gt;Staff account updated for Pham Minh Staff.&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="605" y="380" width="280" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="r2_target" value="&lt;b style=&quot;font-size:10px;color:#374151;&quot;&gt;[Staff]&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px;color:#111827;&quot;&gt;Pham Minh Staff&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="900" y="382" width="140" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="r2_ts" value="&lt;b style=&quot;font-size:11px;color:#111827;&quot;&gt;2026-11-18&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px;color:#6B7280;&quot;&gt;13:40:02&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="1055" y="384" width="100" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="r2_st" value="● Success" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#E5E7EB;strokeColor=#6B7280;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="1170" y="395" width="78" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="r2_btn" value="View Details" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9CA3AF;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="1275" y="391" width="90" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- Row 3: CREATE_LOCATION -->
+        <mxCell id="r3_bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E5E7EB;" vertex="1" parent="1">
+          <mxGeometry x="305" y="448" width="1080" height="91" as="geometry" />
+        </mxCell>
+        <mxCell id="r3_av" value="PR" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#E5E7EB;strokeColor=#6B7280;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="320" y="475" width="36" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="r3_actor" value="&lt;b style=&quot;font-size:12px;color:#111827;&quot;&gt;Portal Reviewer&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px;color:#6B7280;&quot;&gt;staff@fitconnect.com&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="364" y="468" width="145" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="r3_role" value="STAFF" style="rounded=1;arcSize=30;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#9CA3AF;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="520" y="481" width="60" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="r3_action" value="&lt;b style=&quot;font-size:11px;color:#111827;&quot;&gt;[CREATE] Create Location&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px;color:#6B7280;&quot;&gt;Created training location 'The New Gym Can Tho'.&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="605" y="466" width="280" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="r3_target" value="&lt;b style=&quot;font-size:10px;color:#374151;&quot;&gt;[Location]&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px;color:#111827;&quot;&gt;The New Gym Can Tho&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="900" y="468" width="140" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="r3_ts" value="&lt;b style=&quot;font-size:11px;color:#111827;&quot;&gt;2026-11-18&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px;color:#6B7280;&quot;&gt;11:15:44&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="1055" y="470" width="100" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="r3_st" value="● Success" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#E5E7EB;strokeColor=#6B7280;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="1170" y="481" width="78" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="r3_btn" value="View Details" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9CA3AF;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="1275" y="477" width="90" height="32" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== BOTTOM OVERLAY: ACTIVITY DETAILS MODAL (selectedLog) ==================== -->
+        <mxCell id="detail_modal" value="" style="rounded=1;arcSize=3;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#111827;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="305" y="555" width="1080" height="310" as="geometry" />
+        </mxCell>
+        <mxCell id="dm_header" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#D1D5DB;" vertex="1" parent="1">
+          <mxGeometry x="305" y="555" width="1080" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="dm_title" value="&lt;b style=&quot;font-size:14px;color:#111827;&quot;&gt;Activity Details&lt;/b&gt;   [#LOG-1042]   [APPROVE]   [● Success]   —   Approve Coach Application" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=12;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="325" y="561" width="750" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="dm_close" value="Close ✕" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#9CA3AF;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="1290" y="565" width="76" height="28" as="geometry" />
+        </mxCell>
+
+        <!-- Left Info Box: Actor & Activity Info -->
+        <mxCell id="dm_info_box" value="&lt;b style=&quot;font-size:12px;color:#111827;&quot;&gt;Actor &amp; Activity Information&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px;color:#374151;&quot;&gt;&lt;b&gt;Full Name:&lt;/b&gt; Portal Reviewer&lt;br&gt;&lt;b&gt;Email:&lt;/b&gt; staff@fitconnect.com&lt;br&gt;&lt;b&gt;Role:&lt;/b&gt; [STAFF]&lt;br&gt;&lt;b&gt;Entity Type:&lt;/b&gt; [CoachProfile]&lt;br&gt;&lt;b&gt;Action Type:&lt;/b&gt; [APPROVE] (APPROVE_COACH_APPLICATION)&lt;br&gt;&lt;b&gt;Timestamp:&lt;/b&gt; 2026-11-18 14:25:10&lt;br&gt;&lt;b&gt;Description:&lt;/b&gt; Coach application for Tran Minh Coach approved.&lt;/font&gt;" style="rounded=1;arcSize=4;whiteSpace=wrap;html=1;fillColor=#F9FAFB;strokeColor=#E5E7EB;align=left;verticalAlign=top;spacingLeft=12;spacingTop=10;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="325" y="615" width="415" height="232" as="geometry" />
+        </mxCell>
+
+        <!-- Right Box: Change History (Before & After Diff Table) -->
+        <mxCell id="dm_diff_box" value="" style="rounded=1;arcSize=4;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E5E7EB;" vertex="1" parent="1">
+          <mxGeometry x="755" y="615" width="610" height="232" as="geometry" />
+        </mxCell>
+        <mxCell id="dm_diff_title" value="&lt;b style=&quot;font-size:12px;color:#111827;&quot;&gt;Change History&lt;/b&gt; — Comparison of modified fields before and after the operation." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=#6B7280;" vertex="1" parent="1">
+          <mxGeometry x="770" y="622" width="580" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="dm_th" value="   Field                                                   Before                                                 After" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#D1D5DB;align=left;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#374151;" vertex="1" parent="1">
+          <mxGeometry x="770" y="652" width="580" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="dm_tr1" value="   &lt;b&gt;Approval Status&lt;/b&gt; (approvalStatus)             [PENDING]                                           [APPROVED]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E5E7EB;align=left;fontFamily=Helvetica;fontSize=11;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="770" y="684" width="580" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="dm_tr2" value="   &lt;b&gt;Profile Status&lt;/b&gt; (status)                           [PENDING]                                           [ACTIVE]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E5E7EB;align=left;fontFamily=Helvetica;fontSize=11;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="770" y="732" width="580" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="dm_tr3" value="   &lt;b&gt;Approval Note&lt;/b&gt; (note)                             [None]                                                 [Verified certificates &amp; eKYC]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E5E7EB;align=left;fontFamily=Helvetica;fontSize=11;fontColor=#111827;" vertex="1" parent="1">
+          <mxGeometry x="770" y="780" width="580" height="52" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

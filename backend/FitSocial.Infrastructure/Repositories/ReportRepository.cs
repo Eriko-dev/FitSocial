@@ -154,4 +154,14 @@ public class ReportRepository : Repository<Report>, IReportRepository
             && r.Status.ToUpper() == "PENDING",
             cancellationToken);
     }
+
+    public Task<List<Report>> GetReportsForUserAppealAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        return DbSet.AsNoTracking()
+            .Include(r => r.ReportedPost)
+            .Include(r => r.Appeals)
+            .Where(r => (r.ReportedUserId == userId) || (r.ReportedPost != null && r.ReportedPost.AuthorId == userId))
+            .OrderByDescending(r => r.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
 }

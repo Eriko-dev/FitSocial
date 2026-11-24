@@ -1,0 +1,267 @@
+﻿<mxfile host="app.diagrams.net" modified="2026-11-19T01:30:00.000Z" agent="Antigravity" version="24.0.0" type="device">
+  <diagram id="update-own-profile-trainee-coach" name="Update Own Profile (Trainee/Coach)">
+    <mxGraphModel dx="1280" dy="960" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="960" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Canvas Background -->
+        <mxCell id="bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E6E6E6;" vertex="1" parent="1">
+          <mxGeometry x="0" y="0" width="1200" height="960" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== TOP HEADER BAR ==================== -->
+        <mxCell id="header_bar" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E0E0E0;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="10" y="10" width="1180" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="logo_box" value="FitConnect&#xa;Logo" style="rounded=1;whiteSpace=wrap;html=1;arcSize=18;fillColor=#E6E6E6;strokeColor=#CCCCCC;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#222222;" vertex="1" parent="1">
+          <mxGeometry x="26" y="20" width="100" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="search_input" value="  Search posts..." style="rounded=1;whiteSpace=wrap;html=1;arcSize=18;fillColor=#F2F2F2;strokeColor=#CCCCCC;align=left;fontFamily=Helvetica;fontSize=12;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="142" y="20" width="260" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="search_btn" value="Search" style="rounded=1;whiteSpace=wrap;html=1;arcSize=18;fillColor=#222222;strokeColor=#222222;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="412" y="20" width="70" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="filter_btn" value="Filter v" style="rounded=1;whiteSpace=wrap;html=1;arcSize=18;fillColor=#E6E6E6;strokeColor=#CCCCCC;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#222222;" vertex="1" parent="1">
+          <mxGeometry x="490" y="20" width="66" height="44" as="geometry" />
+        </mxCell>
+
+        <!-- Header Right Circular Action Icons -->
+        <mxCell id="icon_wallet" value="Wallet" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#F2F2F2;strokeColor=#CCCCCC;fontFamily=Helvetica;fontSize=10;fontColor=#444444;" vertex="1" parent="1">
+          <mxGeometry x="935" y="22" width="40" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="icon_cart" value="Cart" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#F2F2F2;strokeColor=#CCCCCC;fontFamily=Helvetica;fontSize=10;fontColor=#444444;" vertex="1" parent="1">
+          <mxGeometry x="982" y="22" width="40" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="icon_msg" value="Msg" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#F2F2F2;strokeColor=#CCCCCC;fontFamily=Helvetica;fontSize=10;fontColor=#444444;" vertex="1" parent="1">
+          <mxGeometry x="1029" y="22" width="40" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="icon_notif" value="Notif" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#F2F2F2;strokeColor=#CCCCCC;fontFamily=Helvetica;fontSize=10;fontColor=#444444;" vertex="1" parent="1">
+          <mxGeometry x="1076" y="22" width="40" height="40" as="geometry" />
+        </mxCell>
+        <!-- Active User Profile Avatar in Header -->
+        <mxCell id="icon_avatar" value="Avatar" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#D9D9D9;strokeColor=#222222;strokeWidth=2;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="1123" y="21" width="42" height="42" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== LEFT SIDEBAR ==================== -->
+        <mxCell id="left_sidebar" value="" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor=#FFFFFF;strokeColor=#E0E0E0;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="10" y="90" width="210" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_news" value="[Icon] News Feed" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="22" y="106" width="186" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_pkg_list" value="[Icon] Package List" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="22" y="146" width="186" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_my_pkg" value="[Icon] My Packages" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="22" y="186" width="186" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_coaches" value="[Icon] Coaches List" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="22" y="226" width="186" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_coach_dash" value="[Icon] Coach Dashboard" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="22" y="266" width="186" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="nav_orders" value="[Icon] Trainee Orders" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="22" y="306" width="186" height="34" as="geometry" />
+        </mxCell>
+        <!-- Active Shortcut Indicator -->
+        <mxCell id="side_profile_active" value="[Icon] My Profile (Active)" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#E6E6E6;strokeColor=#CCCCCC;align=left;spacingLeft=12;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#111111;" vertex="1" parent="1">
+          <mxGeometry x="20" y="350" width="190" height="36" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== RIGHT SIDEBAR ==================== -->
+        <mxCell id="right_sidebar" value="" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor=#FFFFFF;strokeColor=#E0E0E0;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="915" y="90" width="275" height="850" as="geometry" />
+        </mxCell>
+        <mxCell id="top_coaches_title" value="TOP 5 COACHES" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="930" y="104" width="245" height="22" as="geometry" />
+        </mxCell>
+
+        <!-- Top Coach 1 -->
+        <mxCell id="coach_row_1" value="" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor=#F8F8F8;strokeColor=#E0E0E0;" vertex="1" parent="1">
+          <mxGeometry x="930" y="130" width="245" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="c1_avatar" value="C1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#E0E0E0;strokeColor=#CCCCCC;fontFamily=Helvetica;fontSize=10;fontColor=#444444;" vertex="1" parent="1">
+          <mxGeometry x="938" y="139" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c1_text" value="&lt;b&gt;Nguyen Van Hung&lt;/b&gt;&lt;br&gt;* 5.0 (24 reviews)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=10;fontColor=#444444;" vertex="1" parent="1">
+          <mxGeometry x="974" y="134" width="130" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="c1_btn" value="VIEW" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#FFFFFF;strokeColor=#CCCCCC;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#222222;" vertex="1" parent="1">
+          <mxGeometry x="1115" y="141" width="50" height="26" as="geometry" />
+        </mxCell>
+
+        <!-- Top Coach 2 -->
+        <mxCell id="coach_row_2" value="" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor=#F8F8F8;strokeColor=#E0E0E0;" vertex="1" parent="1">
+          <mxGeometry x="930" y="186" width="245" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="c2_avatar" value="C2" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#E0E0E0;strokeColor=#CCCCCC;fontFamily=Helvetica;fontSize=10;fontColor=#444444;" vertex="1" parent="1">
+          <mxGeometry x="938" y="195" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c2_text" value="&lt;b&gt;Tran Thi Mai&lt;/b&gt;&lt;br&gt;* 4.9 (18 reviews)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=10;fontColor=#444444;" vertex="1" parent="1">
+          <mxGeometry x="974" y="190" width="130" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="c2_btn" value="VIEW" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#FFFFFF;strokeColor=#CCCCCC;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#222222;" vertex="1" parent="1">
+          <mxGeometry x="1115" y="197" width="50" height="26" as="geometry" />
+        </mxCell>
+
+        <!-- Top Coach 3 -->
+        <mxCell id="coach_row_3" value="" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor=#F8F8F8;strokeColor=#E0E0E0;" vertex="1" parent="1">
+          <mxGeometry x="930" y="242" width="245" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="c3_avatar" value="C3" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#E0E0E0;strokeColor=#CCCCCC;fontFamily=Helvetica;fontSize=10;fontColor=#444444;" vertex="1" parent="1">
+          <mxGeometry x="938" y="251" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c3_text" value="&lt;b&gt;Le Hoang Nam&lt;/b&gt;&lt;br&gt;* 4.8 (12 reviews)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=10;fontColor=#444444;" vertex="1" parent="1">
+          <mxGeometry x="974" y="246" width="130" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="c3_btn" value="VIEW" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#FFFFFF;strokeColor=#CCCCCC;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#222222;" vertex="1" parent="1">
+          <mxGeometry x="1115" y="253" width="50" height="26" as="geometry" />
+        </mxCell>
+
+        <!-- Latest Workout Packages Section -->
+        <mxCell id="pkgs_section_title" value="LATEST WORKOUT PACKAGES" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="930" y="315" width="245" height="22" as="geometry" />
+        </mxCell>
+        <mxCell id="pkg_card_1" value="&lt;b&gt;Hypertrophy &amp; Fat Loss 4-Week&lt;/b&gt;&lt;br&gt;By Coach Hung • $49.99" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor=#F8F8F8;strokeColor=#E0E0E0;align=left;spacingLeft=10;fontFamily=Helvetica;fontSize=10;fontColor=#444444;" vertex="1" parent="1">
+          <mxGeometry x="930" y="342" width="245" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="pkg_card_2" value="&lt;b&gt;Strength Foundation &amp; Mobility&lt;/b&gt;&lt;br&gt;By Coach Mai • $29.99" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor=#F8F8F8;strokeColor=#E0E0E0;align=left;spacingLeft=10;fontFamily=Helvetica;fontSize=10;fontColor=#444444;" vertex="1" parent="1">
+          <mxGeometry x="930" y="396" width="245" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="pkg_card_3" value="&lt;b&gt;Core &amp; HIIT Conditioning&lt;/b&gt;&lt;br&gt;By Coach Nam • $39.99" style="rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor=#F8F8F8;strokeColor=#E0E0E0;align=left;spacingLeft=10;fontFamily=Helvetica;fontSize=10;fontColor=#444444;" vertex="1" parent="1">
+          <mxGeometry x="930" y="450" width="245" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="btn_all_pkgs" value="VIEW ALL PACKAGES" style="rounded=1;whiteSpace=wrap;html=1;arcSize=10;fillColor=#EAEAEA;strokeColor=#CCCCCC;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="930" y="512" width="245" height="36" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== CENTER WORKSPACE: UPDATE OWN PROFILE ==================== -->
+        <mxCell id="center_card" value="" style="rounded=1;whiteSpace=wrap;html=1;arcSize=4;fillColor=#FFFFFF;strokeColor=#222222;strokeWidth=1.5;" vertex="1" parent="1">
+          <mxGeometry x="235" y="90" width="660" height="850" as="geometry" />
+        </mxCell>
+
+        <!-- Toast Banner -->
+        <mxCell id="toast_banner_center" value="Profile updated successfully!" style="rounded=1;whiteSpace=wrap;html=1;arcSize=18;fillColor=#F2F2F2;strokeColor=#444444;align=left;spacingLeft=16;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#222222;" vertex="1" parent="1">
+          <mxGeometry x="255" y="105" width="620" height="34" as="geometry" />
+        </mxCell>
+
+        <!-- Workspace Tabs -->
+        <mxCell id="tab_overview" value="Overview" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=13;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="255" y="148" width="90" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="tab_edit_active" value="Edit Profile" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#222222;strokeColor=#222222;fontFamily=Helvetica;fontSize=13;fontStyle=1;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="350" y="148" width="110" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="tab_security" value="Account Security" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=13;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="470" y="148" width="130" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Profile Cover Header Box -->
+        <mxCell id="cover_banner" value="" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=#EAEAEA;strokeColor=#CCCCCC;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="255" y="190" width="620" height="110" as="geometry" />
+        </mxCell>
+        <!-- Circular Avatar Overlapping Cover -->
+        <mxCell id="profile_avatar" value="Avatar&#xa;Preview" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FFFFFF;strokeColor=#222222;strokeWidth=2;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#222222;align=center;" vertex="1" parent="1">
+          <mxGeometry x="280" y="240" width="80" height="80" as="geometry" />
+        </mxCell>
+        <!-- Avatar Change Buttons -->
+        <mxCell id="btn_avatar_change" value="Change Photo" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#222222;strokeColor=#222222;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="380" y="275" width="95" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="btn_avatar_remove" value="Remove" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CCCCCC;fontFamily=Helvetica;fontSize=10;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="485" y="275" width="75" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="avatar_file_hint" value="JPG, PNG, WEBP (Max 5 MB)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=10;fontColor=#777777;" vertex="1" parent="1">
+          <mxGeometry x="380" y="308" width="200" height="18" as="geometry" />
+        </mxCell>
+
+        <!-- Divider Line -->
+        <mxCell id="divider_profile" value="" style="line;strokeWidth=1;html=1;strokeColor=#E0E0E0;" vertex="1" parent="1">
+          <mxGeometry x="255" y="335" width="620" height="10" as="geometry" />
+        </mxCell>
+
+        <!-- Field: Full Name -->
+        <mxCell id="lbl_user_fullname" value="Full Name *" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#222222;" vertex="1" parent="1">
+          <mxGeometry x="255" y="352" width="120" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="input_user_fullname" value="Nguyen Van Bao" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CCCCCC;fontFamily=Helvetica;fontSize=12;fontColor=#222222;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="255" y="372" width="620" height="36" as="geometry" />
+        </mxCell>
+
+        <!-- Field: Login Email (Read-only) -->
+        <mxCell id="lbl_user_email" value="Email Address (Read-only)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#222222;" vertex="1" parent="1">
+          <mxGeometry x="255" y="416" width="200" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="input_user_email" value="trainee@fitsocial.com  [Locked]" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#E0E0E0;fontFamily=Helvetica;fontSize=12;fontColor=#777777;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="255" y="436" width="620" height="36" as="geometry" />
+        </mxCell>
+
+        <!-- Field: Phone Number -->
+        <mxCell id="lbl_user_phone" value="Phone Number *" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#222222;" vertex="1" parent="1">
+          <mxGeometry x="255" y="480" width="150" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="input_user_phone" value="0912345678" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CCCCCC;fontFamily=Helvetica;fontSize=12;fontColor=#222222;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="255" y="500" width="620" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="hint_user_phone" value="10-digit number starting with 0. Used for training package session coordination." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=10;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="255" y="538" width="620" height="16" as="geometry" />
+        </mxCell>
+
+        <!-- Field: Date of Birth & Gender -->
+        <mxCell id="lbl_user_dob" value="Date of Birth" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#222222;" vertex="1" parent="1">
+          <mxGeometry x="255" y="560" width="120" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="input_user_dob" value="20/05/1998" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CCCCCC;fontFamily=Helvetica;fontSize=12;fontColor=#222222;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="255" y="580" width="300" height="36" as="geometry" />
+        </mxCell>
+
+        <mxCell id="lbl_user_gender" value="Gender" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#222222;" vertex="1" parent="1">
+          <mxGeometry x="575" y="560" width="120" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="gender_user_male" value="(•) Male" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#EAEAEA;strokeColor=#CCCCCC;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#222222;align=center;" vertex="1" parent="1">
+          <mxGeometry x="575" y="580" width="90" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="gender_user_female" value="( ) Female" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CCCCCC;fontFamily=Helvetica;fontSize=11;fontColor=#444444;align=center;" vertex="1" parent="1">
+          <mxGeometry x="675" y="580" width="95" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="gender_user_other" value="( ) Other" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CCCCCC;fontFamily=Helvetica;fontSize=11;fontColor=#444444;align=center;" vertex="1" parent="1">
+          <mxGeometry x="780" y="580" width="95" height="36" as="geometry" />
+        </mxCell>
+
+        <!-- Field: Bio / Fitness Goals -->
+        <mxCell id="lbl_user_bio" value="Bio / Fitness Goals (Max 1000 chars)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontStyle=1;fontColor=#222222;" vertex="1" parent="1">
+          <mxGeometry x="255" y="626" width="300" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="input_user_bio" value="Passionate fitness trainee aiming for hypertrophy and consistent cardio conditioning. Active in the FitConnect community." style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CCCCCC;fontFamily=Helvetica;fontSize=11;fontColor=#222222;align=left;verticalAlign=top;spacingTop=8;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="255" y="646" width="620" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- Coach-Specific Attributes Section -->
+        <mxCell id="lbl_coach_attr" value="Coach Attributes (Years of Experience: 5 yrs  |  Specialties: Bodybuilding, Fat Loss)" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;fillColor=#F8F8F8;strokeColor=#E0E0E0;fontFamily=Helvetica;fontSize=10;fontColor=#555555;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="255" y="720" width="620" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Bottom Form Actions -->
+        <mxCell id="divider_actions_user" value="" style="line;strokeWidth=1;html=1;strokeColor=#E0E0E0;" vertex="1" parent="1">
+          <mxGeometry x="255" y="760" width="620" height="10" as="geometry" />
+        </mxCell>
+        <mxCell id="btn_cancel_user" value="Cancel" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#CCCCCC;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#333333;align=center;" vertex="1" parent="1">
+          <mxGeometry x="670" y="780" width="90" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="btn_save_user" value="Save Changes" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#222222;strokeColor=#222222;fontFamily=Helvetica;fontSize=12;fontStyle=1;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="770" y="780" width="105" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Figure Caption -->
+        <mxCell id="fig_caption_user" value="Figure 37: Update Own Profile Workspace (Trainee / Coach)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontStyle=2;fontColor=#555555;" vertex="1" parent="1">
+          <mxGeometry x="235" y="905" width="660" height="24" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
