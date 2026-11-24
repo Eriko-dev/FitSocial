@@ -23,13 +23,13 @@ public class CoachService : ICoachService
     {
         var queryParts = new List<string>();
         if (!string.IsNullOrWhiteSpace(searchKeyword))
-            queryParts.Add($"searchKeyword={Uri.EscapeDataString(searchKeyword)}");
+            queryParts.Add($"searchKeyword={Uri.EscapeDataString(searchKeyword.Trim())}");
 
         if (minExperience.HasValue && minExperience.Value > 0)
             queryParts.Add($"minExperience={minExperience.Value}");
 
         if (!string.IsNullOrWhiteSpace(sortBy))
-            queryParts.Add($"sortBy={Uri.EscapeDataString(sortBy)}");
+            queryParts.Add($"sortBy={Uri.EscapeDataString(sortBy.Trim())}");
 
         queryParts.Add($"pageNumber={pageNumber}");
         queryParts.Add($"pageSize={pageSize}");
