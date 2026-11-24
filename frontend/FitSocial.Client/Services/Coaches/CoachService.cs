@@ -47,10 +47,6 @@ public class CoachService : ICoachService
         return await _apiClient.PutAsync<FitSocial.Client.Models.Coaches.UpdateReviewDto, bool>($"{BaseEndpoint}/reviews/{reviewId}", dto);
     }
 
-    public async Task<FitSocial.Client.Models.Common.ApiResponse<bool>> DeleteReviewAsync(Guid reviewId)
-    {
-        return await _apiClient.DeleteAsync<bool>($"{BaseEndpoint}/reviews/{reviewId}");
-    }
     public async Task<ApiResponse<List<CoachBankAccountDto>>> GetBankAccountsAsync()
     {
         return await _apiClient.GetAsync<List<CoachBankAccountDto>>($"{BaseEndpoint}/bank-accounts");
