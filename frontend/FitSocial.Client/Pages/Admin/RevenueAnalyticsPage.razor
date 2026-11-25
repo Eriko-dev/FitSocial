@@ -270,10 +270,10 @@
                                 {
                                     <div class="chart-tooltip">
                                         <strong>@hoveredPoint.PeriodLabel (@hoveredPoint.Date.ToString("dd/MM/yyyy"))</strong><br />
-                                        GMV: @FormatCurrency(hoveredPoint.TotalGMV)<br />
-                                        Gói tập: @FormatCurrency(hoveredPoint.TraineePackageGMV)<br />
-                                        Thuê bao Coach: @FormatCurrency(hoveredPoint.CoachSubscriptionRevenue)<br />
-                                        Hoàn tiền: @FormatCurrency(hoveredPoint.ApprovedRefunds)
+                                        Total GMV: @FormatCurrency(hoveredPoint.TotalGMV)<br />
+                                        Trainee Packages: @FormatCurrency(hoveredPoint.TraineePackageGMV)<br />
+                                        Coach Plans: @FormatCurrency(hoveredPoint.CoachSubscriptionRevenue)<br />
+                                        Refunds: @FormatCurrency(hoveredPoint.ApprovedRefunds)
                                     </div>
                                 }
                             }
@@ -322,14 +322,14 @@
                                 <div class="breakdown-row">
                                     <div class="breakdown-left">
                                         <span class="legend-dot" style="background:#3b82f6;"></span>
-                                        <span>Gói tập Trainee (Coach GMV)</span>
+                                        <span>Trainee Packages (Coach GMV)</span>
                                     </div>
                                     <div class="breakdown-val">@data.Breakdown.TraineePackagePercentage.ToString("F1")%</div>
                                 </div>
                                 <div class="breakdown-row">
                                     <div class="breakdown-left">
                                         <span class="legend-dot" style="background:#FF5500;"></span>
-                                        <span>Gói Coach (Platform Direct)</span>
+                                        <span>Coach Plans (Platform Direct)</span>
                                     </div>
                                     <div class="breakdown-val">@data.Breakdown.CoachSubscriptionPercentage.ToString("F1")%</div>
                                 </div>
